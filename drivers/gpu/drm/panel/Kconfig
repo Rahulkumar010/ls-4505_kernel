@@ -45,6 +45,12 @@ config DRM_PANEL_AUO_A030JTN01
 	  Say Y here to enable support for the AUO A030JTN01 320x480 3.0" panel
 	  as found in the YLM RS-97 handheld gaming console.
 
+config DRM_PANEL_ILI9806E_FWVGA
+	tristate "ILI9806E FWVGA video mode panel"
+	depends on OF
+	depends on DRM_MIPI_DSI
+	depends on BACKLIGHT_CLASS_DEVICE
+
 config DRM_PANEL_BOE_BF060Y8M_AJ0
 	tristate "Boe BF060Y8M-AJ0 panel"
 	depends on OF

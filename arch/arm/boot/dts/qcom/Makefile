@@ -2,6 +2,7 @@
 dtb-$(CONFIG_ARCH_QCOM) += \
 	msm8226-motorola-falcon.dtb \
 	qcom-apq8016-sbc.dtb \
+	msm8909-lyf-ls4505.dtb \
 	qcom-apq8026-asus-sparrow.dtb \
 	qcom-apq8026-huawei-sturgeon.dtb \
 	qcom-apq8026-lg-lenok.dtb \
