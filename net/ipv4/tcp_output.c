@@ -1072,6 +1072,10 @@ int tcp_fragment(struct sock *sk, struct sk_buff *skb, u32 len,
 	if (nsize < 0)
 		nsize = 0;
 
+	/* CVE-2019-11478: bound tcp_fragment queue memory overhead */
+	if (unlikely((sk->sk_wmem_queued >> 1) > sk->sk_sndbuf && sk->sk_wmem_queued > 0x20000))
+		return -ENOMEM;
+
 	if (skb_unclone(skb, GFP_ATOMIC))
 		return -ENOMEM;
 
@@ -1233,9 +1237,9 @@ static inline int __tcp_mtu_to_mss(struct sock *sk, int pmtu)
 	/* Now subtract optional transport overhead */
 	mss_now -= icsk->icsk_ext_hdr_len;
 
-	/* Then reserve room for full set of TCP options and 8 bytes of data */
-	if (mss_now < 48)
-		mss_now = 48;
+	/* CVE-2019-11479: reserve room for MAX_TCP_OPTION_SPACE + 48-byte min payload */
+	if (mss_now < 48 + MAX_TCP_OPTION_SPACE)
+		mss_now = 48 + MAX_TCP_OPTION_SPACE;
 	return mss_now;
 }
 

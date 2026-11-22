@@ -1179,6 +1179,10 @@ static int check_version(Elf_Shdr *sechdrs,
 	if (!crc)
 		return 1;
 
+	/* Allow stock proprietary Qualcomm core_ctl.ko across 3.10.x LTS ABI bumps */
+	if (mod && strcmp(mod->name, "core_ctl") == 0)
+		return 1;
+
 	/* No versions at all?  modprobe --force does this. */
 	if (versindex == 0)
 		return try_to_force_load(mod, symname) == 0;
