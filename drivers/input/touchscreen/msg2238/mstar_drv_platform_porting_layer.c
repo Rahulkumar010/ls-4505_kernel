@@ -127,43 +127,28 @@ static int _gIrq = -1;
 /*=============================================================*/
 
 /* read data through I2C then report data to input sub-system when interrupt occurred */
+static volatile int _gTpShuttingDown = 0;
+
 static void _DrvPlatformLyrFingerTouchDoWork(struct work_struct *pWork)
 {
     unsigned long nIrqFlag;
+    bool do_enable = false;
 
-    DBG("*** %s() ***\n", __func__);
+    if (_gTpShuttingDown)
+        return;
 
     DrvIcFwLyrHandleFingerTouch(NULL, 0);
 
-    DBG("*** %s() _gInterruptFlag = %d ***\n", __func__, _gInterruptFlag);  // add for debug
-
-//    DBG("*** %s() spin_lock_irqsave() ***\n", __func__);  // add for debug
     spin_lock_irqsave(&_gIrqLock, nIrqFlag);
-
-#if defined(CONFIG_TOUCH_DRIVER_RUN_ON_SPRD_PLATFORM) || defined(CONFIG_TOUCH_DRIVER_RUN_ON_QCOM_PLATFORM)
-
-    if (_gInterruptFlag == 0) 
+    if (_gInterruptFlag == 0 && !_gTpShuttingDown)
     {
-        enable_irq(_gIrq);
-//        DBG("*** %s() enable_irq(_gIrq) ***\n", __func__);  // add for debug
-
         _gInterruptFlag = 1;
-    } 
-        
-#elif defined(CONFIG_TOUCH_DRIVER_RUN_ON_MTK_PLATFORM)
-
-    if (_gInterruptFlag == 0) 
-    {
-        mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM);
-//        DBG("*** %s() mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM) ***\n", __func__);  // add for debug
-
-        _gInterruptFlag = 1;
+        do_enable = true;
     }
-
-#endif
-
     spin_unlock_irqrestore(&_gIrqLock, nIrqFlag);
-//    DBG("*** %s() spin_unlock_irqrestore() ***\n", __func__);  // add for debug
+
+    if (do_enable)
+        enable_irq(_gIrq);
 }
 
 #if defined(CONFIG_TOUCH_DRIVER_RUN_ON_SPRD_PLATFORM) || defined(CONFIG_TOUCH_DRIVER_RUN_ON_QCOM_PLATFORM)
@@ -458,83 +443,39 @@ void DrvPlatformLyrTouchDeviceResetHw(void)
 void DrvPlatformLyrDisableFingerTouchReport(void)
 {
     unsigned long nIrqFlag;
+    bool did_disable = false;
 
-    DBG("*** %s() ***\n", __func__);
-
-    DBG("*** %s() _gInterruptFlag = %d ***\n", __func__, _gInterruptFlag);  // add for debug
-
-//    DBG("*** %s() spin_lock_irqsave() ***\n", __func__);  // add for debug
     spin_lock_irqsave(&_gIrqLock, nIrqFlag);
-
-#if defined(CONFIG_TOUCH_DRIVER_RUN_ON_SPRD_PLATFORM) || defined(CONFIG_TOUCH_DRIVER_RUN_ON_QCOM_PLATFORM)
-
-#ifdef CONFIG_ENABLE_HOTKNOT
-    if (g_HotKnotState != HOTKNOT_TRANS_STATE && g_HotKnotState != HOTKNOT_BEFORE_TRANS_STATE)
-#endif //CONFIG_ENABLE_HOTKNOT
+    _gTpShuttingDown = 1;
+    if (_gInterruptFlag == 1)
     {
-        if (_gInterruptFlag == 1)  
-        {
-            disable_irq_nosync(_gIrq);
-//            DBG("*** %s() disable_irq(_gIrq) ***\n", __func__);  // add for debug
-
-            _gInterruptFlag = 0;
-        }
+        disable_irq_nosync(_gIrq);
+        _gInterruptFlag = 0;
+        did_disable = true;
     }
-#elif defined(CONFIG_TOUCH_DRIVER_RUN_ON_MTK_PLATFORM)
-
-#ifdef CONFIG_ENABLE_HOTKNOT
-    if (g_HotKnotState != HOTKNOT_TRANS_STATE && g_HotKnotState != HOTKNOT_BEFORE_TRANS_STATE)
-#endif //CONFIG_ENABLE_HOTKNOT           
-    {
-        if (_gInterruptFlag == 1) 
-        {
-            mt_eint_mask(CUST_EINT_TOUCH_PANEL_NUM);
-//            DBG("*** %s() mt_eint_mask(CUST_EINT_TOUCH_PANEL_NUM) ***\n", __func__);  // add for debug
-
-            _gInterruptFlag = 0;
-        }
-    }
-#endif
-
     spin_unlock_irqrestore(&_gIrqLock, nIrqFlag);
-//    DBG("*** %s() spin_unlock_irqrestore() ***\n", __func__);  // add for debug
+
+    if (did_disable)
+        synchronize_irq(_gIrq);
+    cancel_work_sync(&_gFingerTouchWork);
 }
 
 void DrvPlatformLyrEnableFingerTouchReport(void)
 {
     unsigned long nIrqFlag;
+    bool do_enable = false;
 
-    DBG("*** %s() ***\n", __func__);
-
-    DBG("*** %s() _gInterruptFlag = %d ***\n", __func__, _gInterruptFlag);  // add for debug
-
-//    DBG("*** %s() spin_lock_irqsave() ***\n", __func__);  // add for debug
     spin_lock_irqsave(&_gIrqLock, nIrqFlag);
-
-#if defined(CONFIG_TOUCH_DRIVER_RUN_ON_SPRD_PLATFORM) || defined(CONFIG_TOUCH_DRIVER_RUN_ON_QCOM_PLATFORM)
-
-    if (_gInterruptFlag == 0) 
+    _gTpShuttingDown = 0;
+    if (_gInterruptFlag == 0)
     {
-        enable_irq(_gIrq);
-//        DBG("*** %s() enable_irq(_gIrq) ***\n", __func__);  // add for debug
-
-        _gInterruptFlag = 1;        
+        _gInterruptFlag = 1;
+        do_enable = true;
     }
-
-#elif defined(CONFIG_TOUCH_DRIVER_RUN_ON_MTK_PLATFORM)
-
-    if (_gInterruptFlag == 0) 
-    {
-        mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM);
-//        DBG("*** %s() mt_eint_unmask(CUST_EINT_TOUCH_PANEL_NUM) ***\n", __func__);  // add for debug
-
-        _gInterruptFlag = 1;        
-    }
-
-#endif
-
     spin_unlock_irqrestore(&_gIrqLock, nIrqFlag);
-//    DBG("*** %s() spin_unlock_irqrestore() ***\n", __func__);  // add for debug
+
+    if (do_enable)
+        enable_irq(_gIrq);
 }
 
 void DrvPlatformLyrFingerTouchPressed(s32 nX, s32 nY, s32 nPressure, s32 nId)

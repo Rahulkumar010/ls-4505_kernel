@@ -4915,7 +4915,6 @@ static int smb1360_probe(struct i2c_client *client,
 	INIT_DELAYED_WORK(&chip->delayed_init_work,
 			smb1360_delayed_init_work_fn);
 	init_completion(&chip->fg_mem_access_granted);
-	smb1360_wakeup_src_init(chip);
 
 	/* probe the device to check if its actually connected */
 	rc = smb1360_read(chip, CFG_BATT_CHG_REG, &reg);
@@ -4960,6 +4959,7 @@ static int smb1360_probe(struct i2c_client *client,
 			"Couldn't initialize smb349 ragulator rc=%d\n", rc);
 		return rc;
 	}
+	smb1360_wakeup_src_init(chip);
 
 	rc = determine_initial_status(chip);
 	if (rc < 0) {
@@ -5126,6 +5126,7 @@ static int smb1360_probe(struct i2c_client *client,
 unregister_batt_psy:
 	power_supply_unregister(&chip->batt_psy);
 fail_hw_init:
+	wakeup_source_trash(&chip->smb1360_ws.source);
 	regulator_unregister(chip->otg_vreg.rdev);
 	return rc;
 }
@@ -5133,6 +5134,7 @@ fail_hw_init:
 static int smb1360_remove(struct i2c_client *client)
 {
 	struct smb1360_chip *chip = i2c_get_clientdata(client);
+	wakeup_source_trash(&chip->smb1360_ws.source);
 	regulator_unregister(chip->otg_vreg.rdev);
 	power_supply_unregister(&chip->batt_psy);
 	mutex_destroy(&chip->charging_disable_lock);

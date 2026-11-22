@@ -868,8 +868,13 @@ static int wakeup_sources_stats_show(struct seq_file *m, void *unused)
 		"last_change\tprevent_suspend_time\n");
 
 	rcu_read_lock();
-	list_for_each_entry_rcu(ws, &wakeup_sources, entry)
+	list_for_each_entry_rcu(ws, &wakeup_sources, entry) {
+		if (WARN_ON_ONCE((unsigned long)ws < MODULES_VADDR))
+			break;
 		print_wakeup_source_stats(m, ws);
+		if (WARN_ON_ONCE(!rcu_dereference_raw(ws->entry.next)))
+			break;
+	}
 	rcu_read_unlock();
 
 	return 0;
