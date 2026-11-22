@@ -1,0 +1,392 @@
+/* Copyright (c) 2014-2016, The Linux Foundation. All rights reserved.
+ * LYF Flame 8 (LS-4505) Device Tree - verified against stock 02_dtbdump DTB
+ * and live rooted hardware via sysfs/debugfs.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ */
+
+/dts-v1/;
+
+#include "msm8909-qrd.dtsi"
+#include "msm8909-camera-sensor-ls4505.dtsi"
+#include "dsi-panel-ili9806e-txd-fwvga-ips-video.dtsi"
+
+/ {
+	model = "Qualcomm Technologies, Inc. MSM8909-PM8909 1GB QRD SKUE CKT";
+	compatible = "qcom,msm8909-qrd", "qcom,msm8909", "qcom,qrd";
+	qcom,msm-id = <0xf5 0x0 0x102 0x0 0x109 0x0 0x113 0x0>;
+	qcom,pmic-id = <0x1000d 0x0 0x0 0x0>;
+	qcom,board-id = <0x1000b 0x0>;
+
+	chosen {
+		bootargs = "sched_enable_hmp=1";
+	};
+
+	ls4505_batterydata: qcom,battery-data {
+		qcom,rpull-up-kohm = <100>;
+		qcom,vref-batt-therm = <1800000>;
+		#include "batterydata-lyf-ck2000.dtsi"
+	};
+};
+
+/* Keep sensor/touch/camera 1.8V VIO & 2.85V VDD rails active as in stock DTB */
+&pm8909_l6 {
+	regulator-always-on;
+};
+
+&pm8909_l17 {
+	regulator-always-on;
+};
+
+&tlmm_pinmux {
+	epl259x_int_pin {
+		qcom,pins = <&gp 94>;
+		qcom,pin-func = <0>;
+		qcom,num-grp-pins = <1>;
+		label = "epl259x-irq";
+		epl259x_default: epl259x_default {
+			drive-strength = <6>;
+			bias-pull-up;
+		};
+		epl259x_sleep: epl259x_sleep {
+			drive-strength = <2>;
+			bias-pull-down;
+		};
+	};
+
+	smb_int_pin {
+		qcom,pins = <&gp 65>;
+		qcom,num-grp-pins = <1>;
+		qcom,pin-func = <0>;
+		label = "smb1360_int_gpio";
+		smb_int_default: smb_int_default {
+			drive-strength = <2>;
+			bias-pull-up;
+		};
+	};
+};
+
+&soc {
+	qcom,ion {
+		qcom,ion-heap@21 {
+			reg = <21>;
+			qcom,ion-heap-type = "SYSTEM_CONTIG";
+		};
+	};
+
+	/* BLSP1 QUP1 - Sensors */
+	i2c@78b5000 {
+		bosch@18 {
+			compatible = "bosch,bma2x2";
+			reg = <0x18>;
+			pinctrl-names = "default";
+			interrupt-parent = <&msm_gpio>;
+			interrupts = <96 0x2002>;
+			vdd-supply = <&pm8909_l17>;
+			vio-supply = <&pm8909_l6>;
+			bosch,init-interval = <200>;
+			bosch,place = <4>;
+		};
+
+		elan@49 {
+			compatible = "epl,epl259x";
+			reg = <0x49>;
+			pinctrl-names = "default", "sleep";
+			pinctrl-0 = <&epl259x_default>;
+			pinctrl-1 = <&epl259x_sleep>;
+			interrupt-parent = <&msm_gpio>;
+			interrupts = <94 0x2002>;
+			vdd-supply = <&pm8909_l17>;
+			vio-supply = <&pm8909_l6>;
+			epl259x,irq-gpio = <&msm_gpio 94 0x2002>;
+			epl259x,prox_th_min = <500>;
+			epl259x,prox_th_max = <1000>;
+		};
+	};
+
+	/* BLSP1 QUP4 - SMB1360 Charger & Fuel Gauge */
+	i2c@78b8000 {
+		qcom,clk-freq-out = <400000>;
+
+		smb1360_otg_supply: smb1360-chg-fg@14 {
+			compatible = "qcom,smb1360-chg-fg";
+			reg = <0x14>;
+			interrupt-parent = <&msm_gpio>;
+			interrupts = <65 0x8>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&smb_int_default>;
+			qcom,chg-inhibit-disabled;
+			qcom,float-voltage-mv = <4200>;
+			qcom,fg-cc-to-cv-mv = <4180>;
+			qcom,fg-cutoff-voltage-mv = <3400>;
+			qcom,fg-voltage-min-mv = <3200>;
+			qcom,fg-voltage-empty-mv = <3200>;
+			qcom,fg-ibatt-standby-ma = <200>;
+			qcom,fg-soc-max = <90>;
+			qcom,fg-soc-min = <15>;
+			qcom,fg-batt-capacity-mah = <2250>;
+			qcom,fg-cc-soc-coeff = <0x8348>;
+			qcom,thermistor-c1-coeff = <0x86c2>;
+			qcom,iterm-ma = <200>;
+			qcom,charging-timeout = <768>;
+			qcom,otg-batt-curr-limit = <1500>;
+			qcom,recharge-thresh-mv = <100>;
+			qcom,thermal-mitigation = <1000 600 450 0>;
+			qcom,fg-auto-recharge-soc = <99>;
+			qcom,fg-delta-soc = <1>;
+			qcom,empty-soc-disabled;
+			regulator-name = "smb1360_otg_vreg";
+			qcom,rsense-10mhom;
+			qcom,batt-profile-select;
+			qcom,smb1360-vadc = <&pm8909_vadc>;
+			qcom,batt-id-vref-uv = <1800000>;
+			qcom,batt-id-rpullup-kohm = <100>;
+			qcom,profile-a-rid-kohm = <33>;
+			qcom,profile-b-rid-kohm = <91>;
+			qcom,shdn-after-pwroff;
+			qcom,config-hard-thresholds;
+			qcom,hot-bat-decidegc = <590>;
+			qcom,cold-bat-decidegc = <(-200)>;
+			qcom,hot-bat-mv = <4200>;
+			qcom,soft-jeita-supported;
+			qcom,cool-bat-decidegc = <100>;
+			qcom,cool-bat-mv = <4200>;
+			qcom,cool-bat-ma = <600>;
+			qcom,warm-bat-decidegc = <450>;
+			qcom,warm-bat-mv = <4200>;
+			qcom,warm-bat-ma = <0>;
+			qcom,stop-charging-decidegc = <0>;
+			qcom,fg-reset-at-pon;
+			qcom,fg-reset-thresold-mv = <260>;
+		};
+	};
+
+	/* BLSP1 QUP5 - MStar MSG2xxx Touchscreen */
+	i2c@78b9000 {
+		mstar@26 {
+			compatible = "mstar,msg2xxx";
+			reg = <0x26>;
+			pinctrl-names = "pmx_ts_active", "pmx_ts_suspend", "pmx_ts_release";
+			pinctrl-0 = <&ts_int_active &ts_reset_active>;
+			pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+			pinctrl-2 = <&ts_release>;
+			interrupt-parent = <&msm_gpio>;
+			interrupts = <13 0x2>;
+			mstar,irq-gpio = <&msm_gpio 13 0x0>;
+			mstar,reset-gpio = <&msm_gpio 12 0x0>;
+			vdd-supply = <&pm8909_l17>;
+			vcc_i2c-supply = <&pm8909_l6>;
+			mstar,name = "msg2xxx";
+			mstar,create-vkeys;
+			mstar,disp-maxx = <480>;
+			mstar,disp-maxy = <854>;
+			mstar,panel-maxx = <480>;
+			mstar,panel-maxy = <954>;
+			mstar,key-codes = <158 172 139>;
+			mstar,y-offset = <0>;
+		};
+	};
+
+	gen-vkeys {
+		compatible = "qcom,gen-vkeys";
+		label = "ft5x06_ts";
+		qcom,disp-maxx = <480>;
+		qcom,disp-maxy = <854>;
+		qcom,panel-maxx = <480>;
+		qcom,panel-maxy = <946>;
+		qcom,key-codes = <139 172 158>;
+		qcom,y-offset = <0>;
+	};
+
+	sound {
+		compatible = "qcom,msm8x16-audio-codec";
+		qcom,model = "msm8909-skue-snd-card";
+		qcom,msm-snd-card-id = <0>;
+		qcom,msm-codec-type = "internal";
+		qcom,msm-ext-pa = "primary";
+		qcom,msm-mclk-freq = <9600000>;
+		qcom,msm-mbhc-hphl-swh = <1>;
+		qcom,msm-mbhc-gnd-swh = <0>;
+		qcom,msm-hs-micbias-type = "internal";
+		qcom,msm-micbias1-ext-cap;
+		qcom,msm-micbias2-ext-cap;
+		qcom,audio-routing =
+			"RX_BIAS", "MCLK",
+			"SPK_RX_BIAS", "MCLK",
+			"INT_LDO_H", "MCLK",
+			"MIC BIAS Internal1", "Handset Mic",
+			"MIC BIAS Internal2", "Headset Mic",
+			"AMIC1", "MIC BIAS Internal1",
+			"AMIC2", "MIC BIAS Internal2";
+		pinctrl-names = "cdc_lines_act", "cdc_lines_sus";
+		pinctrl-0 = <&cdc_pdm_lines_act>;
+		pinctrl-1 = <&cdc_pdm_lines_sus>;
+		asoc-platform = <&pcm0>, <&pcm1>, <&voip>, <&voice>,
+				<&loopback>, <&compress>, <&hostless>,
+				<&afe>, <&lsm>, <&routing>, <&lpa>,
+				<&voice_svc>;
+		asoc-platform-names = "msm-pcm-dsp.0", "msm-pcm-dsp.1",
+				"msm-voip-dsp", "msm-pcm-voice", "msm-pcm-loopback",
+				"msm-compress-dsp", "msm-pcm-hostless", "msm-pcm-afe",
+				"msm-lsm-client", "msm-pcm-routing", "msm-pcm-lpa",
+				"msm-voice-svc";
+		asoc-cpu = <&dai_pri_auxpcm>, <&dai_hdmi>,
+				<&dai_mi2s0>, <&dai_mi2s1>, <&dai_mi2s2>, <&dai_mi2s3>,
+				<&sb_0_rx>, <&sb_0_tx>, <&sb_1_rx>, <&sb_1_tx>,
+				<&sb_3_rx>, <&sb_3_tx>, <&sb_4_rx>, <&sb_4_tx>,
+				<&bt_sco_rx>, <&bt_sco_tx>, <&bt_a2dp_rx>, <&int_fm_rx>, <&int_fm_tx>,
+				<&afe_pcm_rx>, <&afe_pcm_tx>, <&afe_proxy_rx>, <&afe_proxy_tx>,
+				<&incall_record_rx>, <&incall_record_tx>, <&incall_music_rx>,
+				<&incall_music_2_rx>;
+		asoc-cpu-names = "msm-dai-q6-auxpcm.1", "msm-dai-q6-hdmi.8",
+				"msm-dai-q6-mi2s.0", "msm-dai-q6-mi2s.1",
+				"msm-dai-q6-mi2s.2", "msm-dai-q6-mi2s.3",
+				"msm-dai-q6-dev.16384", "msm-dai-q6-dev.16385",
+				"msm-dai-q6-dev.16386", "msm-dai-q6-dev.16387",
+				"msm-dai-q6-dev.16390", "msm-dai-q6-dev.16391",
+				"msm-dai-q6-dev.16392", "msm-dai-q6-dev.16393",
+				"msm-dai-q6-dev.12288", "msm-dai-q6-dev.12289",
+				"msm-dai-q6-dev.12290", "msm-dai-q6-dev.12292", "msm-dai-q6-dev.12293",
+				"msm-dai-q6-dev.224", "msm-dai-q6-dev.225",
+				"msm-dai-q6-dev.241", "msm-dai-q6-dev.240",
+				"msm-dai-q6-dev.32771", "msm-dai-q6-dev.32772",
+				"msm-dai-q6-dev.32773", "msm-dai-q6-dev.32770";
+		asoc-codec = <&stub_codec>, <&pm8909_conga_dig>;
+		asoc-codec-names = "msm-stub-codec.1", "tombak_codec";
+	};
+};
+
+&sdc2_cd_on {
+	/delete-property/ bias-pull-up;
+	bias-pull-down;
+};
+
+&sdc2_cd_off {
+	/delete-property/ bias-disable;
+	bias-pull-down;
+};
+
+&sdhc_2 {
+	qcom,nonremovable;
+	interrupts = <0 1>;
+	interrupt-map = <0 &intc 0 125 0
+			 1 &intc 0 221 0>;
+	interrupt-names = "hc_irq", "pwr_irq";
+	/delete-property/ cd-gpios;
+};
+
+&pm8909_mpps {
+	mpp@a000 {
+		status = "disabled";
+	};
+
+	mpp@a100 { /* MPP 2 - Backlight PWM */
+		qcom,mode = <1>;
+		qcom,invert = <0>;
+		qcom,src-sel = <4>;
+		qcom,vin-sel = <0>;
+		qcom,master-en = <1>;
+	};
+
+	mpp@a200 {
+		status = "disabled";
+	};
+
+	mpp@a300 { /* MPP 4 - Battery ID / Case Therm Analog Input */
+		qcom,mode = <4>;
+		qcom,invert = <1>;
+		qcom,ain-route = <3>;
+		qcom,master-en = <1>;
+		qcom,src-sel = <0>;
+		status = "okay";
+	};
+};
+
+&pm8909_pon {
+	qcom,store-hard-reset-reason;
+};
+
+&pm8909_vadc {
+	chan@13 {
+		label = "case_therm";
+		reg = <0x13>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <0>;
+		qcom,calibration-type = "ratiometric";
+		qcom,scale-function = <2>;
+		qcom,hw-settle-time = <2>;
+		qcom,fast-avg-setup = <0>;
+		qcom,vadc-thermal-node;
+	};
+
+	chan@30 {
+		qcom,scale-function = <1>;
+	};
+};
+
+&pm8909_adc_tm {
+	chan@30 {
+		qcom,scale-function = <1>;
+	};
+};
+
+&pm8909_chg {
+	qcom,vddmax-mv = <4200>;
+	qcom,vddsafe-mv = <4200>;
+	qcom,vinmin-mv = <4300>;
+	qcom,batt-hot-percentage = <25>;
+	qcom,batt-cold-percentage = <80>;
+	qcom,tchg-mins = <360>;
+	qcom,btc-disabled;
+	qcom,disable-vbatdet-based-recharge;
+	qcom,hot-bat-decidegc = <590>;
+	status = "okay";
+};
+
+&pm8909_bms {
+	status = "okay";
+	qcom,resume-soc = <99>;
+	qcom,use-reported-soc;
+	qcom,force-bms-active-on-charger;
+	qcom,battery-data = <&ls4505_batterydata>;
+};
+
+&usb_otg {
+	interrupts = <0 134 0>, <0 140 0>, <0 136 0>;
+	interrupt-names = "core_irq", "async_irq", "phy_irq";
+	qcom,hsusb-otg-mode = <3>;
+	qcom,usbin-vadc = <&pm8909_vadc>;
+	vbus_otg-supply = <&smb1360_otg_supply>;
+};
+
+&mdss_mdp {
+	qcom,mdss-pref-prim-intf = "dsi";
+};
+
+&mdss_fb0 {
+	qcom,mdss-fb-format = "rgba8888";
+};
+
+&dsi_ili9806e_txd_fwvga_ips_video {
+	qcom,cont-splash-enabled;
+};
+
+&pmx_mdss {
+	qcom,num-grp-pins = <1>;
+	qcom,pins = <&gp 25>;
+};
+
+&pmx_mdss_te {
+	qcom,num-grp-pins = <1>;
+	qcom,pins = <&gp 24>;
+};
+
+&mdss_dsi0 {
+	qcom,dsi-pref-prim-pan = <&dsi_ili9806e_txd_fwvga_ips_video>;
+	pinctrl-names = "mdss_default", "mdss_sleep";
+	pinctrl-0 = <&mdss_dsi_active &mdss_te_active>;
+	pinctrl-1 = <&mdss_dsi_suspend &mdss_te_suspend>;
+	qcom,platform-reset-gpio = <&msm_gpio 25 0>;
+};

@@ -893,5 +893,9 @@ config SENSORS_BMI160_ENABLE_INT2
 	help
 	 If you say yes here, you get INT2 support for Bosch Sensortec
 	 sensors BMI160.
+config SENSORS_ELAN_EPL259X
+	tristate "ELAN EPL259x ALS/PS"
+	depends on I2C
+
 endif
 
