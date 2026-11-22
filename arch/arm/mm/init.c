@@ -363,6 +363,7 @@ phys_addr_t __init arm_memblock_steal(phys_addr_t size, phys_addr_t align)
 
 void __init arm_memblock_init(const struct machine_desc *mdesc)
 {
+	memblock_remove(0xae000000, 0x00100000);
 	/* Register the kernel text, kernel data and initrd with memblock. */
 #ifdef CONFIG_XIP_KERNEL
 	memblock_reserve(__pa(_sdata), _end - _sdata);
