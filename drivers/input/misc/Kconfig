@@ -850,5 +850,9 @@ config SENSORS_BMI058
 	 If you say yes here, you get support for Bosch Sensortec's
 	 sensor driver of BMI058.
 
+config SENSORS_ELAN_EPL259X
+	tristate "ELAN EPL259x ALS/PS"
+	depends on I2C
+
 endif
 
