@@ -78,11 +78,13 @@ This repository contains **all baseline, testing, live-debugging, and production
 ## Quick Start
 
 ### 1. Build from Source (Linux / WSL2 ext4)
+Only **AOSP GCC 4.8** (`https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.8` @ commit `d9735fc81434f2af2c44d86ca57740c673c8d9bc`, auto-fetched by `build_kernel_and_wlan.sh`) and standard Ubuntu build packages (`build-essential bc bison flex libssl-dev libelf-dev device-tree-compiler python-is-python3 rsync cpio kmod`) are needed — the full kernel + Prima WLAN (`external/prima-wlan`) source are bundled in this repo:
 ```bash
-git clone https://github.com/Rahulkumar010/ls-4505_kernel.git
-cd ls-4505_kernel
+git clone https://github.com/Rahulkumar010/ls-4505_kernel.git ~/ls4505-work/ls-4505_kernel
+cd ~/ls4505-work/ls-4505_kernel
 ./ls4505-tools/scripts/build_kernel_and_wlan.sh
 ```
+*(See [`docs/02-BUILDING-AND-UPDATING-KERNEL.md`](./docs/02-BUILDING-AND-UPDATING-KERNEL.md) for the full table of upstream URLs, exact commit SHAs, host versions, and offline `boot.img` packing.)*
 
 ### 2. Safe One-Shot Live Test over ADB (No Xubuntu / Untouched `boot`)
 ```bash
