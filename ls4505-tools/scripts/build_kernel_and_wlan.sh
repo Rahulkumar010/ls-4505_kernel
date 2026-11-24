@@ -2,16 +2,20 @@
 set -euo pipefail
 
 # Build custom Linux 3.10.108+ LTS kernel, appended DTB, and Prima pronto_wlan.ko for LYF Flame 8 (LS-4505)
+# Exact Toolchain Commit: d9735fc81434f2af2c44d86ca57740c673c8d9bc (AOSP arm-linux-androideabi-4.8 lollipop-mr1-release)
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 TC_DIR="${TC_DIR:-$HOME/ls4505-work/arm-linux-androideabi-4.8}"
+TC_URL="https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.8"
+TC_SHA="d9735fc81434f2af2c44d86ca57740c673c8d9bc"
 OUT_DIR="${OUT_DIR:-$HOME/ls4505-work/out-3.10.108}"
 
 if [ ! -x "$TC_DIR/bin/arm-linux-androideabi-gcc" ]; then
-    echo "Cloning AOSP arm-linux-androideabi-4.8 toolchain into $TC_DIR ..."
-    mkdir -p "$(dirname "$TC_DIR")"
-    git clone --depth 1 -b lollipop-mr1-release \
-        https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.8 \
-        "$TC_DIR"
+    echo "Fetching AOSP arm-linux-androideabi-4.8 @ $TC_SHA into $TC_DIR ..."
+    mkdir -p "$TC_DIR"
+    git -C "$TC_DIR" init
+    git -C "$TC_DIR" remote add origin "$TC_URL" 2>/dev/null || git -C "$TC_DIR" remote set-url origin "$TC_URL"
+    git -C "$TC_DIR" fetch --depth 1 origin "$TC_SHA"
+    git -C "$TC_DIR" checkout FETCH_HEAD
 fi
 
 export PATH="$TC_DIR/bin:$PATH"
