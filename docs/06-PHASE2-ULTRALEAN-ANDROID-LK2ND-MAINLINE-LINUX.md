@@ -12,7 +12,7 @@ This document covers the complete **Phase 2 (`dual_both`)** architecture verifie
 
 | Component | Upstream Repository | Exact Commit / Version | Toolchain |
 |---|---|---|---|
-| **Mainline Linux `6.12.1` LTS** | `https://github.com/msm8916-mainline/linux.git` | Base `1728ab7f6075ea66a7ad1400791c826b9f01f8c3` -> Branch [`mainline/ls4505-6.12.1`](../) (`tag: v6.12.1-ls4505-mainline`) | `arm-linux-gnueabihf-gcc` (GCC 13.3.0, Binutils 2.42) |
+| **Mainline Linux `6.12.1` LTS** | `https://github.com/msm8916-mainline/linux.git` | Base `1728ab7f6075ea66a7ad1400791c826b9f01f8c3` -> Patch [`0001-ARM-dts-qcom-Add-LYF-Flame-8-LS-4505-MSM8909-mainlin.patch`](../ls4505-tools/phase2-mainline-pmos/mainline-dts/0001-ARM-dts-qcom-Add-LYF-Flame-8-LS-4505-MSM8909-mainlin.patch) | `arm-linux-gnueabihf-gcc` (GCC 13.3.0, Binutils 2.42) |
 | **`lk2nd` Bootloader** | `https://github.com/msm8916-mainline/lk2nd.git` | `bef71355c7e8742d21d6eaffc6a2d0065580cf07` + [`msm8909-lyf-ls4505.dts`](../ls4505-tools/phase2-mainline-pmos/lk2nd/msm8909-lyf-ls4505.dts) | `arm-none-eabi-gcc` |
 | **Userland Rootfs** | Official Alpine Linux `v3.21` `armv7` | `alpine-minirootfs-3.21.3-armv7.tar.gz` + `apk-tools-static-2.14.13-r0` (`xfce4`, `lightdm`, `xorg-server`, `networkmanager`, `openssh`, `dillo`, `matchbox-keyboard`) | Native ARMv7 (`musl` hard-float) |
 
@@ -50,7 +50,7 @@ Reverse-engineering stock `Firmware/emmc_appsboot.mbn` revealed two critical OEM
 
 ## 4. Mainline Linux `6.12.1` LTS Verified Hardware Matrix
 
-Defined in [`arch/arm/boot/dts/qcom/qcom-msm8909-lyf-ls4505.dts`](../ls4505-tools/phase2-mainline-pmos/mainline-dts/qcom-msm8909-lyf-ls4505.dts) (branch `mainline/ls4505-6.12.1`):
+Defined in [`arch/arm/boot/dts/qcom/qcom-msm8909-lyf-ls4505.dts`](../ls4505-tools/phase2-mainline-pmos/mainline-dts/qcom-msm8909-lyf-ls4505.dts) :
 
 | Subsystem | Mainline Driver / DT Binding | Live Status on `6.12.1` |
 |---|---|---|
