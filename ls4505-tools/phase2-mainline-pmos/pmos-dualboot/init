@@ -1,0 +1,126 @@
+#!/bin/sh
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+mkdir -p /dev/pts /dev/shm /sys/kernel/config /run /tmp
+mount -t devpts devpts /dev/pts
+mount -t configfs configfs /sys/kernel/config
+
+if [ -e /sys/class/graphics/fb0/blank ]; then
+    echo 0 > /sys/class/graphics/fb0/blank 2>/dev/null || true
+fi
+for bl in /sys/class/backlight/*/brightness; do
+    [ -e "$bl" ] && echo 220 > "$bl" 2>/dev/null || true
+done
+
+exec >/dev/tty0 2>&1 </dev/tty0
+echo ""
+echo "=========================================================="
+echo "  LYF Flame 8 (LS-4505) - Mainline Linux $(uname -r)"
+echo "  postmarketOS / Alpine v3.21 Dual-Boot Loader"
+echo "=========================================================="
+
+setup_usb_network() {
+    G=/sys/kernel/config/usb_gadget/g1
+    mkdir -p $G
+    echo 0x1d6b > $G/idVendor
+    echo 0x0104 > $G/idProduct
+    echo 0x0100 > $G/bcdDevice
+    echo 0x0200 > $G/bcdUSB
+    echo 0xEF > $G/bDeviceClass
+    echo 0x02 > $G/bDeviceSubClass
+    echo 0x01 > $G/bDeviceProtocol
+    mkdir -p $G/os_desc
+    echo 1 > $G/os_desc/use
+    echo 0xcd > $G/os_desc/b_vendor_code
+    echo MSFT100 > $G/os_desc/qw_sign
+
+    mkdir -p $G/strings/0x409
+    echo "4f409015" > $G/strings/0x409/serialnumber
+    echo "LYF / postmarketOS" > $G/strings/0x409/manufacturer
+    echo "LS-4505 Mainline Linux 6.12" > $G/strings/0x409/product
+
+    mkdir -p $G/functions/rndis.usb0
+    echo RNDIS > $G/functions/rndis.usb0/os_desc/interface.rndis/compatible_id
+    echo 5162001 > $G/functions/rndis.usb0/os_desc/interface.rndis/sub_compatible_id
+    echo "02:45:05:89:09:01" > $G/functions/rndis.usb0/dev_addr
+    echo "02:45:05:89:09:02" > $G/functions/rndis.usb0/host_addr
+
+    mkdir -p $G/configs/c.1/strings/0x409
+    echo "RNDIS Network" > $G/configs/c.1/strings/0x409/configuration
+    echo 500 > $G/configs/c.1/MaxPower
+    ln -s $G/configs/c.1 $G/os_desc/c.1
+    ln -s $G/functions/rndis.usb0 $G/configs/c.1/
+
+    UDC=$(ls /sys/class/udc | head -n 1)
+    if [ -n "$UDC" ]; then
+        echo "$UDC" > $G/UDC
+        sleep 1
+        ifconfig usb0 172.16.42.1 netmask 255.255.255.0 up 2>/dev/null || ip addr add 172.16.42.1/24 dev usb0
+        ip link set usb0 up 2>/dev/null || true
+        mkdir -p /var/lib/misc
+        touch /var/lib/misc/udhcpd.leases
+        udhcpd /etc/udhcpd.conf 2>/dev/null || true
+        telnetd -p 2323 -l /bin/sh 2>/dev/null || true
+        echo "[OK] USB RNDIS active on 172.16.42.1 (UDC: $UDC)"
+    fi
+}
+setup_usb_network || echo "[WARN] USB gadget setup warning"
+
+echo "[..] Waiting for userdata (/dev/mmcblk0p29)..."
+for i in $(seq 1 20); do
+    [ -b /dev/mmcblk0p29 ] && break
+    sleep 1
+done
+
+mount -t ext4 -o rw,noatime /dev/mmcblk0p29 /mnt/userdata || {
+    echo "[ERR] Mount /dev/mmcblk0p29 failed! Debug shell on 172.16.42.1:2323"
+    exec /bin/sh
+}
+
+ROOTDIR=/mnt/userdata/pmos_root
+if [ ! -f "$ROOTDIR/etc/.pmos_installed" ]; then
+    echo "[1/3] First-boot setup: extracting base rootfs into /data/pmos_root..."
+    rm -rf "$ROOTDIR"
+    mkdir -p "$ROOTDIR"
+    tar -xzof /mnt/userdata/local/tmp/pmos-base-rootfs.tar.gz -C "$ROOTDIR"
+    mkdir -p "$ROOTDIR/tmp"
+    echo "[1b/3] Unpacking offline 448-package APK bundle..."
+    tar -xof /mnt/userdata/local/tmp/apk-cache.tar -C "$ROOTDIR/tmp/"
+    cp -f /install_pmos_firstboot.sh "$ROOTDIR/tmp/install_pmos_firstboot.sh"
+    chmod +x "$ROOTDIR/tmp/install_pmos_firstboot.sh"
+
+    mount -t proc proc "$ROOTDIR/proc"
+    mount -t sysfs sysfs "$ROOTDIR/sys"
+    mount -o bind /dev "$ROOTDIR/dev"
+    mkdir -p "$ROOTDIR/dev/pts"
+    mount -t devpts devpts "$ROOTDIR/dev/pts"
+
+    chroot "$ROOTDIR" /bin/sh /tmp/install_pmos_firstboot.sh || {
+        echo "[ERR] First-boot provisioning failed! Debug telnetd active on 172.16.42.1:2323"
+        exec /bin/sh
+    }
+
+    rm -f "$ROOTDIR/tmp/install_pmos_firstboot.sh"
+    rm -f /mnt/userdata/local/tmp/apk-cache.tar
+    umount "$ROOTDIR/dev/pts" 2>/dev/null || true
+    umount "$ROOTDIR/dev" 2>/dev/null || true
+    umount "$ROOTDIR/sys" 2>/dev/null || true
+    umount "$ROOTDIR/proc" 2>/dev/null || true
+    sync
+fi
+
+echo "[OK] Mounting /data/pmos_root -> /sysroot & starting Xfce4 Desktop..."
+killall telnetd 2>/dev/null || true
+mount --bind "$ROOTDIR" /sysroot
+mkdir -p /sysroot/mnt/android_media
+if [ -d /mnt/userdata/media/0 ]; then
+    mount --bind /mnt/userdata/media/0 /sysroot/mnt/android_media 2>/dev/null || true
+fi
+umount -l /mnt/userdata
+
+umount /sys/kernel/config 2>/dev/null || true
+umount /dev/pts 2>/dev/null || true
+exec switch_root /sysroot /sbin/init

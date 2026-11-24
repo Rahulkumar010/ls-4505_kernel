@@ -1,0 +1,31 @@
+// SPDX-License-Identifier: BSD-3-Clause
+
+#include <skeleton32.dtsi>
+#include <lk2nd.dtsi>
+
+/ {
+	qcom,msm-id = <QCOM_ID_MSM8909 0>,
+		      <QCOM_ID_MSM8209 0>,
+		      <QCOM_ID_APQ8009 0>;
+	qcom,board-id = <QCOM_BOARD_ID(QRD, 1, 0) 0>,
+			<QCOM_BOARD_ID_QRD 0>;
+	qcom,pmic-id = <0x1000d 0 0 0>;
+};
+
+&lk2nd {
+	lyf-ls4505 {
+		model = "LYF Flame 8 (LS-4505)";
+		compatible = "lyf,ls-4505", "qcom,msm8909";
+
+		lk2nd,dtb-files = "msm8909-lyf-ls4505";
+		lk2nd,match-panel;
+
+		panel {
+			compatible = "lyf,ls4505-panel", "lk2nd,panel";
+
+			qcom,mdss_dsi_ili9806e_txd_fwvga_ips_video {
+				compatible = "lyf,ili9806e-txd-ips";
+			};
+		};
+	};
+};

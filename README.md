@@ -6,6 +6,10 @@ This repository contains **all baseline, testing, live-debugging, and production
 
 ---
 
+## Phase 2: Mainline Linux 6.12.1 LTS + `lk2nd` + Ultra-Lean Android Dual-Boot
+
+See **[`docs/06-PHASE2-ULTRALEAN-ANDROID-LK2ND-MAINLINE-LINUX.md`](docs/06-PHASE2-ULTRALEAN-ANDROID-LK2ND-MAINLINE-LINUX.md)** for full details, build scripts (`ls4505-tools/phase2-mainline-pmos/`), prebuilts (`prebuilt/phase2/`), and branch **`mainline/ls4505-6.12.1`** (`tag: v6.12.1-ls4505-mainline`).
+
 ## Branches & Kernel Versions Included
 
 | Branch / Tag | Kernel Version | Status & Purpose |
