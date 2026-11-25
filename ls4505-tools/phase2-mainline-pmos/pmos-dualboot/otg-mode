@@ -12,34 +12,35 @@ case "${1:-status}" in
     host|on)
         [ -e /sys/kernel/config/usb_gadget/g1/UDC ] && echo "" > /sys/kernel/config/usb_gadget/g1/UDC 2>/dev/null || true
         if [ -n "$SMB_BUS" ]; then
-            # 1. Unlock SMB1360 volatile register writes (CMD_I2C_REG 0x40 |= ALLOW_VOLATILE_BIT 0x40)
-            C40=$(i2cget -f -y "$SMB_BUS" 0x14 0x40 2>/dev/null || echo 0x00)
-            i2cset -f -y "$SMB_BUS" 0x14 0x40 $(printf "0x%02x" $(( C40 | 0x40 )))
-            # 2. Set OTG battery current limit to 1500mA (CFG_BATT_CHG_REG 0x00 |= 0x18)
-            C00=$(i2cget -f -y "$SMB_BUS" 0x14 0x00 2>/dev/null || echo 0xbb)
-            i2cset -f -y "$SMB_BUS" 0x14 0x00 $(printf "0x%02x" $(( C00 | 0x18 )))
-            # 3. Enable 5V OTG Boost converter (CMD_CHG_REG 0x42 |= CMD_OTG_EN_BIT 0x01)
-            C42=$(i2cget -f -y "$SMB_BUS" 0x14 0x42 2>/dev/null || echo 0x02)
-            NEW42=$(printf "0x%02x" $(( C42 | 0x01 )))
-            i2cset -f -y "$SMB_BUS" 0x14 0x42 "$NEW42"
-            echo "[OK] SMB1360 5V 1.5A OTG Boost ENABLED on i2c-$SMB_BUS (0x40=$(i2cget -f -y "$SMB_BUS" 0x14 0x40), 0x42=$(i2cget -f -y "$SMB_BUS" 0x14 0x42))"
+            # 1. Unlock SMB1360 volatile writes (CMD_I2C_REG 0x40 |= 0x40)
+            i2cset -f -y "$SMB_BUS" 0x14 0x40 0x40
+            i2cset -f -y "$SMB_BUS" 0x14 0x41 0x80
+            # 3. Clear CHG_EN_BY_PIN_BIT in CFG_CHG_MISC_REG (0x07 = 0x10) so 0x42 I2C bit controls OTG/Chg!
+            i2cset -f -y "$SMB_BUS" 0x14 0x07 0x10
+            # 4. Set OTG current limit to 1500mA (CFG_BATT_CHG_REG 0x00 = 0xbb)
+            i2cset -f -y "$SMB_BUS" 0x14 0x00 0xbb
+            # 5. Enable 5V OTG Boost converter (CMD_CHG_REG 0x42 = 0x03)
+            i2cset -f -y "$SMB_BUS" 0x14 0x42 0x03
+            echo "[OK] SMB1360 5V 1.5A OTG Boost ON (i2c-$SMB_BUS: 0x07=$(i2cget -f -y "$SMB_BUS" 0x14 0x07), 0x42=$(i2cget -f -y "$SMB_BUS" 0x14 0x42), irqF=$(i2cget -f -y "$SMB_BUS" 0x14 0x55))"
         fi
+        # Wait 1s for PM8909 usbin VBUS rise notifier to finish BEFORE overriding ChipIdea role to host!
+        sleep 1
         [ -n "$ROLE_FILE" ] && echo host > "$ROLE_FILE"
         modprobe mt7601u 2>/dev/null || true
         sleep 3
-        echo "[OK] USB OTG Host mode active! Connected USB devices:"
+        echo "ChipIdea USB Role: $(cat "$ROLE_FILE" 2>/dev/null || echo N/A)"
+        echo "=== Connected USB Devices ==="
         lsusb 2>/dev/null || true
+        echo "=== Network Interfaces ==="
         nmcli device status 2>/dev/null || ip -o link
         ;;
     gadget|peripheral|device|off)
         if [ -n "$SMB_BUS" ]; then
-            C40=$(i2cget -f -y "$SMB_BUS" 0x14 0x40 2>/dev/null || echo 0x40)
-            i2cset -f -y "$SMB_BUS" 0x14 0x40 $(printf "0x%02x" $(( C40 | 0x40 )))
-            C42=$(i2cget -f -y "$SMB_BUS" 0x14 0x42 2>/dev/null || echo 0x02)
-            NEW42=$(printf "0x%02x" $(( C42 & ~0x01 )))
-            i2cset -f -y "$SMB_BUS" 0x14 0x42 "$NEW42"
-            echo "[OK] SMB1360 5V OTG Boost DISABLED on i2c-$SMB_BUS (0x42=$(i2cget -f -y "$SMB_BUS" 0x14 0x42))"
+            i2cset -f -y "$SMB_BUS" 0x14 0x40 0x40
+            i2cset -f -y "$SMB_BUS" 0x14 0x42 0x02
+            echo "[OK] SMB1360 5V OTG Boost OFF (0x42=$(i2cget -f -y "$SMB_BUS" 0x14 0x42))"
         fi
+        sleep 1
         if [ -n "$ROLE_FILE" ]; then
             echo device > "$ROLE_FILE" 2>/dev/null || echo gadget > "$ROLE_FILE" 2>/dev/null || true
         fi
@@ -53,7 +54,7 @@ case "${1:-status}" in
         ;;
     *)
         echo "ChipIdea USB Role: $(cat "$ROLE_FILE" 2>/dev/null || echo N/A)"
-        echo "SMB1360 I2C Bus  : ${SMB_BUS:-N/A} (0x40=$( [ -n "$SMB_BUS" ] && i2cget -f -y "$SMB_BUS" 0x14 0x40 2>/dev/null || echo N/A ), 0x42=$( [ -n "$SMB_BUS" ] && i2cget -f -y "$SMB_BUS" 0x14 0x42 2>/dev/null || echo N/A ))"
+        echo "SMB1360 I2C Bus  : ${SMB_BUS:-N/A} (0x07=$( [ -n "$SMB_BUS" ] && i2cget -f -y "$SMB_BUS" 0x14 0x07 2>/dev/null || echo N/A ), 0x42=$( [ -n "$SMB_BUS" ] && i2cget -f -y "$SMB_BUS" 0x14 0x42 2>/dev/null || echo N/A ))"
         lsusb 2>/dev/null || true
         nmcli device status 2>/dev/null || ip -o link
         ;;

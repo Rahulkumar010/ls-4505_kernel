@@ -44,7 +44,7 @@ This document records all root-cause analyses, fixes, and verifications across *
   - **Mainline `6.12.1` (Best OS for Simultaneous Dual Wi-Fi!)**:
     - Enabled `dr_mode = "otg"; usb-role-switch;` (`/sys/class/usb_role/ci_hdrc.0-role-switch/role`), enabled `&blsp_i2c4` (`i2c-1` -> `SMB1360` `@ 0x14`), built `CONFIG_MT7601U=m` (`mt7601u.ko`), and installed `/lib/firmware/mt7601u.bin` + `networkmanager-cli` (`nmcli`) + `hostapd` + `usbutils`.
     - Added `/usr/local/bin/otg-mode` (and **`OTG`** button right on the JWM top bar!):
-      - `sudo otg-mode host`: switches ChipIdea to `host`, enables **SMB1360 5V 1.5A VBUS boost** (`reg 0x42 |= 0x01`), and loads `mt7601u` so your **Wayona `148f:7601` USB Wi-Fi (`wlan1`)** runs simultaneously alongside built-in **`WCN3620` (`wlan0`)**!
+      - `sudo otg-mode host` (or tap **`OTG ON`** on the JWM top bar): unlocks SMB1360 volatile writes (`0x40=0x40`), powers on SMB1360 (`0x41=0x80`), clears `CHG_EN_BY_PIN_BIT` (`0x07=0x10`), sets `1500mA` OTG limit (`0x00=0xbb`), enables **5V 1.5A VBUS boost** (`0x42=0x03`), waits 1s for `pm8909_usbin` VBUS rise to settle, and sets ChipIdea role to `host`, and loads `mt7601u` so your **Wayona `148f:7601` USB Wi-Fi (`wlan1`)** runs simultaneously alongside built-in **`WCN3620` (`wlan0`)**!
       - `sudo otg-mode gadget`: disables 5V boost and restores USB RNDIS (`172.16.42.1`) SSH to PC.
 
 ---

@@ -1,38 +1,37 @@
 <?xml version="1.0"?>
 <JWM>
     <RootMenu onroot="123">
-        <Program label="Terminal" icon="utilities-terminal">xterm -fa "DejaVu Sans Mono" -fs 11 -bg "#11161d" -fg "#e6edf3"</Program>
-        <Program label="Touch Keyboard" icon="input-keyboard">matchbox-keyboard</Program>
-        <Program label="Wi-Fi Manager (nmtui)" icon="network-wireless">xterm -fa "DejaVu Sans Mono" -fs 11 -e "sudo nmtui"</Program>
+        <Program label="Terminal">xterm -fa "DejaVu Sans Mono" -fs 11 -bg "#11161d" -fg "#e6edf3"</Program>
+        <Program label="Touch Keyboard">matchbox-keyboard</Program>
+        <Program label="Wi-Fi Manager (nmtui)">xterm -fa "DejaVu Sans Mono" -fs 11 -e nmtui</Program>
         <Separator/>
-        <Program label="USB OTG Host ON (5V + MT7601U)" icon="network-wired">xterm -fa "DejaVu Sans Mono" -fs 10 -hold -e "sudo /usr/local/bin/otg-mode host"</Program>
-        <Program label="USB Gadget RNDIS ON (PC SSH)" icon="computer">xterm -fa "DejaVu Sans Mono" -fs 10 -e "sudo /usr/local/bin/otg-mode gadget"</Program>
+        <Program label="USB OTG Host ON (5V + MT7601U)">xterm -fa "DejaVu Sans Mono" -fs 10 -hold -e /usr/local/bin/otg-mode host</Program>
+        <Program label="USB Gadget RNDIS ON (PC SSH)">xterm -fa "DejaVu Sans Mono" -fs 10 -hold -e /usr/local/bin/otg-mode gadget</Program>
+        <Program label="USB &amp; Dual-WiFi Status">xterm -fa "DejaVu Sans Mono" -fs 10 -hold -e /usr/local/bin/otg-mode status</Program>
         <Separator/>
-        <Program label="Web Browser (Dillo)" icon="web-browser">dillo</Program>
-        <Program label="File Manager (Thunar)" icon="system-file-manager">thunar /home/user</Program>
-        <Program label="System Monitor (htop)" icon="utilities-system-monitor">xterm -fa "DejaVu Sans Mono" -fs 10 -e "htop"</Program>
+        <Program label="Web Browser (Dillo)">dillo</Program>
+        <Program label="File Manager (Thunar)">thunar /root</Program>
+        <Program label="System Monitor (htop)">xterm -fa "DejaVu Sans Mono" -fs 10 -e htop</Program>
         <Separator/>
-        <Program label="Boot Android 6.0.1" icon="system-reboot">/usr/local/bin/reboot-to-android</Program>
-        <Program label="Reboot Linux 6.12.1" icon="view-refresh">/usr/local/bin/reboot-to-linux</Program>
-        <Program label="Boot lk2nd Fastboot" icon="applications-system">/usr/local/bin/reboot-to-fastboot</Program>
+        <Program label="Boot Android 6.0.1">/usr/local/bin/reboot-to-android</Program>
+        <Program label="Reboot Linux 6.12.1">/usr/local/bin/reboot-to-linux</Program>
+        <Program label="Boot lk2nd Fastboot">/usr/local/bin/reboot-to-fastboot</Program>
     </RootMenu>
 
-    <!-- Large 42px Touch Taskbar at Top -->
     <Tray x="0" y="0" height="42" autohide="off" halign="fixed" valign="top">
         <TrayButton label=" Apps ">root:1</TrayButton>
         <TrayButton label=" Kbd ">exec:matchbox-keyboard</TrayButton>
         <TrayButton label=" Term ">exec:xterm -fa "DejaVu Sans Mono" -fs 11 -bg "#11161d" -fg "#e6edf3"</TrayButton>
-        <TrayButton label=" OTG ">exec:xterm -fa "DejaVu Sans Mono" -fs 10 -hold -e "sudo /usr/local/bin/otg-mode host"</TrayButton>
-        <TaskList maxwidth="90"/>
+        <TrayButton label=" OTG ON ">exec:xterm -fa "DejaVu Sans Mono" -fs 10 -hold -e /usr/local/bin/otg-mode host</TrayButton>
+        <TaskList maxwidth="80"/>
         <Dock/>
-        <Clock format="%H:%M"><Button mask="123">exec:xterm -fa "DejaVu Sans Mono" -fs 11 -e "sudo nmtui"</Button></Clock>
+        <Clock format="%H:%M"><Button mask="123">exec:xterm -fa "DejaVu Sans Mono" -fs 11 -e nmtui</Button></Clock>
     </Tray>
 
-    <!-- Bottom Quick-Switch Touch Bar -->
     <Tray x="0" y="-1" height="38" autohide="off" halign="fixed" valign="bottom">
-        <TrayButton label=" Wi-Fi ">exec:xterm -fa "DejaVu Sans Mono" -fs 11 -e "sudo nmtui"</TrayButton>
+        <TrayButton label=" Wi-Fi ">exec:xterm -fa "DejaVu Sans Mono" -fs 11 -e nmtui</TrayButton>
         <TrayButton label=" Web ">exec:dillo</TrayButton>
-        <TrayButton label=" Files ">exec:thunar /home/user</TrayButton>
+        <TrayButton label=" Files ">exec:thunar /root</TrayButton>
         <TrayButton label=" Android ">exec:/usr/local/bin/reboot-to-android</TrayButton>
     </Tray>
 
@@ -80,8 +79,6 @@
     <DoubleClickDelta>12</DoubleClickDelta>
     <FocusModel>click</FocusModel>
 
-    <!-- Hardware / Capacitive Button Bindings! -->
-    <Key keycode="166">close</Key>
     <Key key="XF86Back">close</Key>
     <Key key="XF86HomePage">showdesktop</Key>
     <Key key="Menu">root:1</Key>
