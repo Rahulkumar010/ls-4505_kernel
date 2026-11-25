@@ -1,0 +1,31 @@
+diff --git a/app/aboot/aboot.c b/app/aboot/aboot.c
+index b44a5c2..1939533 100644
+--- a/app/aboot/aboot.c
++++ b/app/aboot/aboot.c
+@@ -5644,6 +5644,26 @@ void aboot_init(const struct app_descriptor *app)
+ 	}
+ #endif
+ 
++	/* One-shot hands-free lk2nd Fastboot trigger via 'misc' partition */
++	{
++		int idx = partition_get_index("misc");
++		uint64_t ptn = partition_get_offset(idx);
++		if (idx != INVALID_PTN && ptn) {
++			uint8_t *mbuf = memalign(CACHE_LINE, ROUNDUP(512, CACHE_LINE));
++			if (mbuf) {
++				mmc_set_lun(partition_get_lun(idx));
++				if (!mmc_read(ptn, (uint32_t *)mbuf, 512) &&
++				    !memcmp(mbuf, "lk2nd-fastboot", 14)) {
++					dprintf(INFO, "lk2nd: one-shot misc fastboot trigger detected!\n");
++					memset(mbuf, 0, 512);
++					mmc_write(ptn, 512, mbuf);
++					boot_into_fastboot = true;
++				}
++				free(mbuf);
++			}
++		}
++	}
++
+ #if LK2ND_FORCE_FASTBOOT
+ 	boot_into_fastboot = true;
+ 	dprintf(INFO, "Fastboot mode was forced with compile-time flag.\n");

@@ -109,7 +109,7 @@ static int _gTpdFlag = 0;
 /*=============================================================*/
 
 #ifdef CONFIG_TP_HAVE_KEY
-const int g_TpVirtualKey[] = {TOUCH_KEY_MENU, TOUCH_KEY_HOME, TOUCH_KEY_BACK};
+const int g_TpVirtualKey[] = {TOUCH_KEY_BACK, TOUCH_KEY_MENU, TOUCH_KEY_HOME};
 
 #ifdef CONFIG_ENABLE_REPORT_KEY_WITH_COORDINATE
 #define BUTTON_W (100)

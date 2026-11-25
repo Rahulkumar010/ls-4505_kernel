@@ -738,8 +738,18 @@ static int msm_otg_reset(struct usb_phy *phy)
 		ulpi_write(phy, ulpi_val, ULPI_USB_INT_EN_RISE);
 		ulpi_write(phy, ulpi_val, ULPI_USB_INT_EN_FALL);
 	} else if (pdata->otg_control == OTG_PMIC_CONTROL) {
-		ulpi_write(phy, OTG_COMP_DISABLE,
-			ULPI_SET(ULPI_PWR_CLK_MNG_REG));
+		if (pdata->mode == USB_OTG && motg->phy_irq && !pdata->pmic_id_irq) {
+			/* Keep PHY OTG ID comparator & ID pull-up active on PM8909+SMB1360 */
+			ulpi_write(phy, OTG_COMP_DISABLE,
+				ULPI_CLR(ULPI_PWR_CLK_MNG_REG));
+			val = readl_relaxed(USB_OTGSC) | OTGSC_IDPU | OTGSC_IDIE;
+			writel_relaxed(val, USB_OTGSC);
+			ulpi_write(phy, ULPI_INT_IDGRD, ULPI_USB_INT_EN_RISE);
+			ulpi_write(phy, ULPI_INT_IDGRD, ULPI_USB_INT_EN_FALL);
+		} else {
+			ulpi_write(phy, OTG_COMP_DISABLE,
+				ULPI_SET(ULPI_PWR_CLK_MNG_REG));
+		}
 		/* Enable PMIC pull-up */
 		pm8xxx_usb_id_pullup(1);
 		if (motg->phy_irq)
@@ -3109,6 +3119,13 @@ static void msm_otg_init_sm(struct msm_otg *motg)
 				else
 					clear_bit(ID, &motg->inputs);
 			} else if (motg->phy_irq) {
+				if (msm_otg_read_phy_id_state(motg)) {
+					set_bit(ID, &motg->inputs);
+				} else {
+					clear_bit(ID, &motg->inputs);
+					set_bit(A_BUS_REQ, &motg->inputs);
+				}
+			} else if (motg->phy_irq) {
 				if (msm_otg_read_phy_id_state(motg))
 					set_bit(ID, &motg->inputs);
 				else
@@ -4403,7 +4420,9 @@ static ssize_t msm_otg_mode_write(struct file *file, const char __user *ubuf,
 		switch (phy->state) {
 		case OTG_STATE_B_IDLE:
 		case OTG_STATE_B_PERIPHERAL:
+			clear_bit(B_SESS_VLD, &motg->inputs);
 			clear_bit(ID, &motg->inputs);
+			set_bit(A_BUS_REQ, &motg->inputs);
 			break;
 		default:
 			goto out;
@@ -4742,8 +4761,7 @@ static int msm_otg_debugfs_init(struct msm_otg *motg)
 	if (!msm_otg_dbg_root || IS_ERR(msm_otg_dbg_root))
 		return -ENODEV;
 
-	if ((pdata->mode == USB_OTG || pdata->mode == USB_PERIPHERAL) &&
-		pdata->otg_control == OTG_USER_CONTROL) {
+	if (pdata->mode == USB_OTG || pdata->mode == USB_PERIPHERAL) {
 
 		msm_otg_dentry = debugfs_create_file("mode", S_IRUGO |
 			S_IWUSR, msm_otg_dbg_root, motg,

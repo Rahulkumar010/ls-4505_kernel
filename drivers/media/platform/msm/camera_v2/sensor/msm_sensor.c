@@ -523,6 +523,97 @@ int msm_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl)
 		pr_err("msm_sensor_match_id chip id doesnot match\n");
 		return -ENODEV;
 	}
+
+	if (!strcmp(sensor_name, "s5k5e2_55a0_8909") ||
+	    !strcmp(sensor_name, "s5k5e2_front_55a0_8909")) {
+		uint16_t eeprom_rid = 0;
+		rc = sensor_i2c_client->i2c_func_tbl->i2c_write(
+			sensor_i2c_client, 0x0a00, 0x04, MSM_CAMERA_I2C_BYTE_DATA);
+		if (rc < 0)
+			return rc;
+		msleep(5);
+		rc = sensor_i2c_client->i2c_func_tbl->i2c_write(
+			sensor_i2c_client, 0x0a02, 0x02, MSM_CAMERA_I2C_BYTE_DATA);
+		if (rc < 0)
+			return rc;
+		msleep(5);
+		rc = sensor_i2c_client->i2c_func_tbl->i2c_write(
+			sensor_i2c_client, 0x0a00, 0x01, MSM_CAMERA_I2C_BYTE_DATA);
+		if (rc < 0)
+			return rc;
+		msleep(5);
+		rc = sensor_i2c_client->i2c_func_tbl->i2c_read(
+			sensor_i2c_client, 0x0a04, &eeprom_rid, MSM_CAMERA_I2C_BYTE_DATA);
+		if (rc < 0)
+			return rc;
+		pr_err("<eeprom> eepromRid:0x%x,\n", eeprom_rid);
+		sensor_i2c_client->i2c_func_tbl->i2c_write(
+			sensor_i2c_client, 0x0a00, 0x04, MSM_CAMERA_I2C_BYTE_DATA);
+		msleep(5);
+		sensor_i2c_client->i2c_func_tbl->i2c_write(
+			sensor_i2c_client, 0x0a00, 0x00, MSM_CAMERA_I2C_BYTE_DATA);
+		mdelay(5);
+		if (eeprom_rid != 0x10) {
+			pr_err("<eeprom> match eeprom id:0x%x is error\n", eeprom_rid);
+			return -ENODEV;
+		}
+		pr_err("%s this is season %s s5k5e2 camera\n", __func__,
+		       !strcmp(sensor_name, "s5k5e2_55a0_8909") ? "rear" : "front");
+	} else if (!strcmp(sensor_name, "ov8856_z8856ah") ||
+	           !strcmp(sensor_name, "ov8856_z8856ah_new") ||
+	           !strcmp(sensor_name, "ov8856_1608ste_chicony")) {
+		uint16_t flag = 0, eeprom_rid = 0, expected_rid = 0x16;
+		if (!strcmp(sensor_name, "ov8856_z8856ah"))
+			expected_rid = 0x06;
+		else if (!strcmp(sensor_name, "ov8856_z8856ah_new"))
+			expected_rid = 0x05;
+
+		sensor_i2c_client->i2c_func_tbl->i2c_write(
+			sensor_i2c_client, 0x0100, 0x01, MSM_CAMERA_I2C_BYTE_DATA);
+		msleep(5);
+		sensor_i2c_client->i2c_func_tbl->i2c_write(
+			sensor_i2c_client, 0x5001, 0x02, MSM_CAMERA_I2C_BYTE_DATA);
+		msleep(5);
+		sensor_i2c_client->i2c_func_tbl->i2c_write(
+			sensor_i2c_client, 0x3d84, 0xc0, MSM_CAMERA_I2C_BYTE_DATA);
+		msleep(5);
+		sensor_i2c_client->i2c_func_tbl->i2c_write(
+			sensor_i2c_client, 0x3d88, 0x70, MSM_CAMERA_I2C_BYTE_DATA);
+		msleep(5);
+		sensor_i2c_client->i2c_func_tbl->i2c_write(
+			sensor_i2c_client, 0x3d89, 0x10, MSM_CAMERA_I2C_BYTE_DATA);
+		msleep(5);
+		sensor_i2c_client->i2c_func_tbl->i2c_write(
+			sensor_i2c_client, 0x3d8a, 0x72, MSM_CAMERA_I2C_BYTE_DATA);
+		msleep(5);
+		sensor_i2c_client->i2c_func_tbl->i2c_write(
+			sensor_i2c_client, 0x3d8b, 0x0e, MSM_CAMERA_I2C_BYTE_DATA);
+		msleep(5);
+		sensor_i2c_client->i2c_func_tbl->i2c_write(
+			sensor_i2c_client, 0x3d81, 0x01, MSM_CAMERA_I2C_BYTE_DATA);
+		msleep(5);
+		rc = sensor_i2c_client->i2c_func_tbl->i2c_read(
+			sensor_i2c_client, 0x7010, &flag, MSM_CAMERA_I2C_BYTE_DATA);
+		if (rc >= 0) {
+			rc = sensor_i2c_client->i2c_func_tbl->i2c_read(
+				sensor_i2c_client, ((flag >> 6) == 1) ? 0x7011 : 0x701a,
+				&eeprom_rid, MSM_CAMERA_I2C_BYTE_DATA);
+		}
+		pr_err("<eeprom> eepromRid:0x%x,\n", eeprom_rid);
+		sensor_i2c_client->i2c_func_tbl->i2c_write(
+			sensor_i2c_client, 0x5001, 0x0a, MSM_CAMERA_I2C_BYTE_DATA);
+		msleep(5);
+		sensor_i2c_client->i2c_func_tbl->i2c_write(
+			sensor_i2c_client, 0x0100, 0x00, MSM_CAMERA_I2C_BYTE_DATA);
+		mdelay(5);
+		if (rc < 0)
+			return rc;
+		if (eeprom_rid != expected_rid) {
+			pr_err("<eeprom> match eeprom id:0x%x is error\n", eeprom_rid);
+			return -ENODEV;
+		}
+		pr_err("%s this is Qtech %s camera\n", __func__, sensor_name);
+	}
 	return rc;
 }
 
