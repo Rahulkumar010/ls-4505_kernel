@@ -12,6 +12,8 @@ See **[`docs/06-PHASE2-ULTRALEAN-ANDROID-LK2ND-MAINLINE-LINUX.md`](docs/06-PHASE
 
 - **[`docs/07-FIXES-CAMERA-KEYS-OTG-FASTBOOT-JWM-MT7601U.md`](docs/07-FIXES-CAMERA-KEYS-OTG-FASTBOOT-JWM-MT7601U.md)** ? Front camera OTP red-tint fix, capacitive button mapping, hands-free `lk2nd` Fastboot, USB OTG + SMB1360 5V boost, `MT7601U` Dual Wi-Fi, ~68 MB `JWM` Touch UI, and `ls4505_ultralean` v2.
 
+- **[`docs/08-FDROID-ANDROID6-TRUST-ANCHOR-FIX.md`](docs/08-FDROID-ANDROID6-TRUST-ANCHOR-FIX.md)** ? Root-cause & PEM-order fix for F-Droid Let's Encrypt `ISRG Root X1` (`6187b673.0`) TLS trust anchor validation on Android 6.0.1.
+
 ## Branches & Kernel Versions Included
 
 | Branch / Tag | Kernel Version | Status & Purpose |
