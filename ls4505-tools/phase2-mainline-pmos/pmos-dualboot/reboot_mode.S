@@ -16,7 +16,7 @@ _start:
     /* reboot(0xfee1dead, 672274793, 0xa1b2c3d4, arg) = syscall 88 */
     movw r0, #0xdead
     movt r0, #0xfee1
-    movw r1, #0x1997
+    movw r1, #0x1969
     movt r1, #0x2812
     movw r2, #0xc3d4
     movt r2, #0xa1b2

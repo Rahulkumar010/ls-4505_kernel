@@ -10,6 +10,8 @@ This repository contains **all baseline, testing, live-debugging, and production
 
 See **[`docs/06-PHASE2-ULTRALEAN-ANDROID-LK2ND-MAINLINE-LINUX.md`](docs/06-PHASE2-ULTRALEAN-ANDROID-LK2ND-MAINLINE-LINUX.md)** for full details, build scripts (`ls4505-tools/phase2-mainline-pmos/`), prebuilts (`prebuilt/phase2/`).
 
+- **[`docs/07-FIXES-CAMERA-KEYS-OTG-FASTBOOT-JWM-MT7601U.md`](docs/07-FIXES-CAMERA-KEYS-OTG-FASTBOOT-JWM-MT7601U.md)** ? Front camera OTP red-tint fix, capacitive button mapping, hands-free `lk2nd` Fastboot, USB OTG + SMB1360 5V boost, `MT7601U` Dual Wi-Fi, ~68 MB `JWM` Touch UI, and `ls4505_ultralean` v2.
+
 ## Branches & Kernel Versions Included
 
 | Branch / Tag | Kernel Version | Status & Purpose |

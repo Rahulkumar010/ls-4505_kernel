@@ -1,0 +1,4 @@
+#!/bin/sh
+printf "lk2nd-fastboot\0\0" | sudo dd of=/dev/mmcblk0p13 bs=16 count=1 conv=sync 2>/dev/null
+sync
+exec sudo /usr/local/bin/reboot-mode recovery

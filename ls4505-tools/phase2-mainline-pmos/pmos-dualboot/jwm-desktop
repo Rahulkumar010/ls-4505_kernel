@@ -1,0 +1,11 @@
+#!/sbin/openrc-run
+name="Ultra-Light JWM Touch Desktop"
+command="/usr/bin/xinit"
+command_args="/home/user/.xinitrc -- /usr/libexec/Xorg :0 vt7 -nolisten tcp -novtswitch"
+command_background="yes"
+pidfile="/run/jwm-desktop.pid"
+
+depend() {
+    need dbus udev local
+    after sshd
+}

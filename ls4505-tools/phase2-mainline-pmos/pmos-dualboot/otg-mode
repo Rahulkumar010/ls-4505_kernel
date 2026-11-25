@@ -1,0 +1,49 @@
+#!/bin/sh
+mountpoint -q /sys/kernel/debug || mount -t debugfs debugfs /sys/kernel/debug 2>/dev/null || true
+SMB_BUS=""
+for d in /sys/bus/i2c/devices/i2c-*; do
+    case "$(readlink -f "$d")" in
+        *78b8000.i2c*) SMB_BUS="${d##*i2c-}" ;;
+    esac
+done
+ROLE_FILE=$(ls /sys/kernel/debug/ci_hdrc.*/role /sys/kernel/debug/usb/ci_hdrc.*/role /sys/class/usb_role/*/role 2>/dev/null | head -n 1)
+
+case "${1:-status}" in
+    host|on)
+        [ -e /sys/kernel/config/usb_gadget/g1/UDC ] && echo "" > /sys/kernel/config/usb_gadget/g1/UDC 2>/dev/null || true
+        [ -n "$ROLE_FILE" ] && echo host > "$ROLE_FILE"
+        if [ -n "$SMB_BUS" ]; then
+            CUR=$(i2cget -f -y "$SMB_BUS" 0x14 0x42 2>/dev/null || echo 0x00)
+            NEW=$(printf "0x%02x" $(( CUR | 0x01 )))
+            i2cset -f -y "$SMB_BUS" 0x14 0x42 "$NEW"
+            echo "[OK] SMB1360 5V OTG Boost ENABLED on i2c-$SMB_BUS (reg 0x42=$NEW)"
+        fi
+        modprobe mt7601u 2>/dev/null || true
+        sleep 2
+        echo "[OK] USB OTG Host mode active! Plugged USB devices:"
+        lsusb 2>/dev/null || true
+        ip -o link | awk '{print $2, $3}'
+        ;;
+    gadget|peripheral|device|off)
+        if [ -n "$SMB_BUS" ]; then
+            CUR=$(i2cget -f -y "$SMB_BUS" 0x14 0x42 2>/dev/null || echo 0x00)
+            NEW=$(printf "0x%02x" $(( CUR & ~0x01 )))
+            i2cset -f -y "$SMB_BUS" 0x14 0x42 "$NEW"
+            echo "[OK] SMB1360 5V OTG Boost DISABLED on i2c-$SMB_BUS (reg 0x42=$NEW)"
+        fi
+        [ -n "$ROLE_FILE" ] && echo device > "$ROLE_FILE" 2>/dev/null || echo gadget > "$ROLE_FILE"
+        UDC=$(ls /sys/class/udc 2>/dev/null | head -n 1)
+        if [ -n "$UDC" ] && [ -d /sys/kernel/config/usb_gadget/g1 ]; then
+            echo "$UDC" > /sys/kernel/config/usb_gadget/g1/UDC 2>/dev/null || true
+            ip addr add 172.16.42.1/24 dev usb0 2>/dev/null || true
+            ip link set usb0 up 2>/dev/null || true
+        fi
+        echo "[OK] USB Gadget (RNDIS 172.16.42.1) mode active!"
+        ;;
+    *)
+        echo "ChipIdea USB Role: $(cat "$ROLE_FILE" 2>/dev/null || echo N/A)"
+        echo "SMB1360 I2C Bus  : ${SMB_BUS:-N/A} (reg 0x42=$( [ -n "$SMB_BUS" ] && i2cget -f -y "$SMB_BUS" 0x14 0x42 2>/dev/null || echo N/A ))"
+        lsusb 2>/dev/null || true
+        nmcli device status
+        ;;
+esac
