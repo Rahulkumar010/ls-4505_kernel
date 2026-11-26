@@ -1,0 +1,220 @@
+#!/bin/sh
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+mountpoint -q /sys/kernel/config || mount -t configfs configfs /sys/kernel/config 2>/dev/null || true
+mountpoint -q /sys/kernel/debug  || mount -t debugfs  debugfs  /sys/kernel/debug  2>/dev/null || true
+
+DEX_SSID="${DEX_SSID:-LS4505-DeX}"
+DEX_PSK="${DEX_PSK:-ls4505dex}"
+
+stop_hotspot_ap() {
+    rm -f /run/dex-hotspot.active
+    if [ -f /run/dnsmasq-dex-ap.pid ]; then
+        kill "$(cat /run/dnsmasq-dex-ap.pid)" 2>/dev/null || true
+        rm -f /run/dnsmasq-dex-ap.pid
+    fi
+    nmcli connection down "$DEX_SSID" >/dev/null 2>&1 || true
+    ( sleep 2; nmcli device connect wlan0 >/dev/null 2>&1 || true ) &
+}
+
+start_usb_dnsmasq() {
+    IFACE="${1:-usb0}"
+    killall udhcpd 2>/dev/null || true
+    if [ -f /run/dnsmasq-dex-usb.pid ]; then
+        kill "$(cat /run/dnsmasq-dex-usb.pid)" 2>/dev/null || true
+        rm -f /run/dnsmasq-dex-usb.pid
+    fi
+    if command -v dnsmasq >/dev/null 2>&1; then
+        dnsmasq \
+            --pid-file=/run/dnsmasq-dex-usb.pid \
+            --interface="$IFACE" \
+            --bind-dynamic \
+            --except-interface=lo \
+            --dhcp-range=172.16.42.10,172.16.42.50,255.255.255.0,12h \
+            --dhcp-option=3 \
+            --dhcp-option=6,172.16.42.1 \
+            --local=/lan/ --address=/dex.lan/172.16.42.1 2>/dev/null || true
+    fi
+}
+
+configure_usb_gadget() {
+    PROTO="$1"
+    G=/sys/kernel/config/usb_gadget/g1
+    mkdir -p "$G" "$G/strings/0x409" "$G/configs/c.1/strings/0x409" "$G/os_desc"
+
+    [ -e "$G/UDC" ] && echo "" > "$G/UDC" 2>/dev/null || true
+    rm -f "$G/os_desc/c.1" "$G/configs/c.1/rndis.usb0" "$G/configs/c.1/ncm.usb0" "$G/configs/c.1/ecm.usb0" 2>/dev/null || true
+    rmdir "$G/functions/rndis.usb0" "$G/functions/ncm.usb0" "$G/functions/ecm.usb0" 2>/dev/null || true
+
+    echo 0x1d6b > "$G/idVendor"
+    echo 0x0200 > "$G/bcdUSB"
+    echo 0xEF   > "$G/bDeviceClass"
+    echo 0x02   > "$G/bDeviceSubClass"
+    echo 0x01   > "$G/bDeviceProtocol"
+    echo 1      > "$G/os_desc/use"
+    echo 0xcd   > "$G/os_desc/b_vendor_code"
+    echo MSFT100 > "$G/os_desc/qw_sign"
+    echo "4f409015" > "$G/strings/0x409/serialnumber"
+    echo "LYF / postmarketOS" > "$G/strings/0x409/manufacturer"
+
+    if [ "$PROTO" = "ncm" ]; then
+        echo 0x0106 > "$G/idProduct"
+        echo 0x0102 > "$G/bcdDevice"
+        echo "LS-4505 Web-DeX Universal USB (CDC-NCM)" > "$G/strings/0x409/product"
+        mkdir -p "$G/functions/ncm.usb0"
+        echo "02:45:05:89:09:11" > "$G/functions/ncm.usb0/dev_addr" 2>/dev/null || true
+        echo "02:45:05:89:09:12" > "$G/functions/ncm.usb0/host_addr" 2>/dev/null || true
+        [ -e "$G/functions/ncm.usb0/os_desc/interface.ncm/compatible_id" ] && \
+            echo WINNCM > "$G/functions/ncm.usb0/os_desc/interface.ncm/compatible_id" 2>/dev/null || true
+        echo "CDC-NCM Web-DeX" > "$G/configs/c.1/strings/0x409/configuration"
+        echo 500 > "$G/configs/c.1/MaxPower"
+        ln -s "$G/configs/c.1" "$G/os_desc/c.1"
+        ln -s "$G/functions/ncm.usb0" "$G/configs/c.1/"
+    else
+        echo 0x0104 > "$G/idProduct"
+        echo 0x0100 > "$G/bcdDevice"
+        echo "LS-4505 Mainline Linux 6.12" > "$G/strings/0x409/product"
+        mkdir -p "$G/functions/rndis.usb0"
+        echo RNDIS   > "$G/functions/rndis.usb0/os_desc/interface.rndis/compatible_id" 2>/dev/null || true
+        echo 5162001 > "$G/functions/rndis.usb0/os_desc/interface.rndis/sub_compatible_id" 2>/dev/null || true
+        echo "02:45:05:89:09:01" > "$G/functions/rndis.usb0/dev_addr" 2>/dev/null || true
+        echo "02:45:05:89:09:02" > "$G/functions/rndis.usb0/host_addr" 2>/dev/null || true
+        echo "RNDIS Web-DeX" > "$G/configs/c.1/strings/0x409/configuration"
+        echo 500 > "$G/configs/c.1/MaxPower"
+        ln -s "$G/configs/c.1" "$G/os_desc/c.1"
+        ln -s "$G/functions/rndis.usb0" "$G/configs/c.1/"
+    fi
+
+    UDC=$(ls /sys/class/udc 2>/dev/null | head -n 1)
+    if [ -n "$UDC" ]; then
+        echo "$UDC" > "$G/UDC"
+        sleep 1
+        IFACE=$(cat "$G/functions/$PROTO.usb0/ifname" 2>/dev/null || echo usb0)
+        sleep 1
+        nmcli device set "$IFACE" managed no >/dev/null 2>&1 || true
+        ip addr flush dev "$IFACE" 2>/dev/null || true
+        ip addr add 172.16.42.1/24 dev "$IFACE" 2>/dev/null || true
+        ip link set "$IFACE" up 2>/dev/null || true
+        start_usb_dnsmasq "$IFACE"
+    fi
+}
+
+case "${1:-status}" in
+    usb|usb-ncm)
+        echo "=== Switching to Mode 1: Universal USB Web-DeX (CDC-NCM) ==="
+        stop_hotspot_ap
+        /usr/local/bin/otg-mode off >/dev/null 2>&1 || true
+        configure_usb_gadget ncm
+        rc-service web-dex start >/dev/null 2>&1 || true
+        echo "[OK] Universal USB Web-DeX (Windows 10/11, macOS, Linux, ChromeOS) ACTIVE!"
+        echo " -> Open in laptop browser: http://172.16.42.1  (or http://dex.lan)"
+        ;;
+    usb-rndis|rndis)
+        echo "=== Switching to Mode 1 (Legacy): USB RNDIS Web-DeX ==="
+        stop_hotspot_ap
+        /usr/local/bin/otg-mode off >/dev/null 2>&1 || true
+        configure_usb_gadget rndis
+        rc-service web-dex start >/dev/null 2>&1 || true
+        echo "[OK] USB RNDIS Web-DeX ACTIVE!"
+        echo " -> Open in laptop browser: http://172.16.42.1  (or http://dex.lan)"
+        ;;
+    hotspot|ap|wifi)
+        echo "=== Switching to Mode 2A: Wireless DeX Hotspot + 5V OTG Dual-WiFi ==="
+        touch /run/dex-hotspot.active
+        if [ -f /run/dnsmasq-dex-usb.pid ]; then
+            kill "$(cat /run/dnsmasq-dex-usb.pid)" 2>/dev/null || true
+            rm -f /run/dnsmasq-dex-usb.pid
+        fi
+
+        echo "[1/3] Enabling SMB1360 5V 1.5A OTG Boost for external Wayona MT7601U (wlan1)..."
+        /usr/local/bin/otg-mode host
+
+        echo "[2/3] Starting WPA2 Hotspot '$DEX_SSID' on internal WCN3620 (wlan0 @ 172.16.43.1)..."
+        nmcli radio wifi on >/dev/null 2>&1 || true
+        nmcli device set wlan0 managed yes >/dev/null 2>&1 || true
+        nmcli connection delete "$DEX_SSID" >/dev/null 2>&1 || true
+        nmcli connection add type wifi ifname wlan0 con-name "$DEX_SSID" autoconnect no ssid "$DEX_SSID" \
+            802-11-wireless.mode ap \
+            802-11-wireless.band bg \
+            802-11-wireless.channel 6 \
+            wifi-sec.key-mgmt wpa-psk \
+            wifi-sec.proto rsn \
+            wifi-sec.pairwise ccmp \
+            wifi-sec.group ccmp \
+            wifi-sec.psk "$DEX_PSK" \
+            ipv4.method manual \
+            ipv4.addresses 172.16.43.1/24 \
+            ipv6.method ignore >/dev/null
+        nmcli connection up "$DEX_SSID"
+
+        if [ -f /run/dnsmasq-dex-ap.pid ]; then
+            kill "$(cat /run/dnsmasq-dex-ap.pid)" 2>/dev/null || true
+            rm -f /run/dnsmasq-dex-ap.pid
+        fi
+        dnsmasq \
+            --pid-file=/run/dnsmasq-dex-ap.pid \
+            --interface=wlan0 \
+            --bind-dynamic \
+            --except-interface=lo \
+            --dhcp-range=172.16.43.10,172.16.43.50,255.255.255.0,12h \
+            --dhcp-option=3,172.16.43.1 \
+            --dhcp-option=6,172.16.43.1,1.1.1.1,8.8.8.8 \
+            --local=/lan/ --address=/dex.lan/172.16.43.1
+
+        echo "[3/3] Enabling NAT Forwarding (wlan0 LS4505-DeX <-> external Wayona wlan1)..."
+        sysctl -w net.ipv4.ip_forward=1 >/dev/null 2>&1 || true
+        modprobe iptable_nat xt_MASQUERADE 2>/dev/null || true
+        if command -v iptables-legacy >/dev/null 2>&1; then
+            iptables-legacy -t nat -C POSTROUTING -s 172.16.43.0/24 -o wlan1 -j MASQUERADE 2>/dev/null || \
+                iptables-legacy -t nat -A POSTROUTING -s 172.16.43.0/24 -o wlan1 -j MASQUERADE 2>/dev/null || true
+        fi
+        rc-service web-dex start >/dev/null 2>&1 || true
+
+        echo ""
+        echo "=================================================================="
+        echo "  [OK] LS-4505 Wireless Web-DeX + OTG Dual-WiFi ACTIVE!"
+        echo "  Wi-Fi SSID : $DEX_SSID"
+        echo "  Password   : $DEX_PSK"
+        echo "  DeX URL    : http://172.16.43.1   (or http://dex.lan)"
+        echo "  Wayona USB : Plug into Micro-USB OTG -> appears as wlan1!"
+        echo "=================================================================="
+        ;;
+    wlan1-scan|scan)
+        if ! ip link show wlan1 >/dev/null 2>&1; then
+            echo "[!] wlan1 (Wayona MT7601U) not detected yet."
+            echo "    Plug in OTG cable + Wayona adapter and run: dex-mode hotspot (or otg-mode host)"
+            lsusb 2>/dev/null || true
+            exit 1
+        fi
+        ip link set wlan1 up 2>/dev/null || true
+        nmcli dev wifi rescan ifname wlan1 2>/dev/null || true
+        sleep 2
+        echo "=== External Wayona MT7601U (wlan1) Wi-Fi Scan ==="
+        nmcli -f IN-USE,SSID,CHAN,RATE,SIGNAL,BARS,SECURITY dev wifi list ifname wlan1
+        ;;
+    *)
+        echo "=================================================================="
+        echo "  LS-4505 Zero-Install Browser Web-DeX Status"
+        echo "=================================================================="
+        if [ -f /run/dex-hotspot.active ]; then
+            echo "Active Mode : Mode 2A - Wireless Hotspot ($DEX_SSID) + OTG Host"
+            echo "Browser URL : http://172.16.43.1  |  http://dex.lan"
+            echo "Hotspot PSK : $DEX_PSK"
+        else
+            PROD=$(cat /sys/kernel/config/usb_gadget/g1/strings/0x409/product 2>/dev/null || echo "USB")
+            echo "Active Mode : Mode 1 - USB Plug & Play ($PROD)"
+            echo "Browser URL : http://172.16.42.1  |  http://dex.lan"
+        fi
+        echo "Web-DeX Svc : $(pidof Xvnc >/dev/null && echo 'Xvnc :1 UP' || echo 'Xvnc DOWN') | $(pidof dex-webd >/dev/null && echo 'dex-webd :80 UP' || echo 'dex-webd DOWN')"
+        ROLE_FILE=$(ls /sys/class/usb_role/*/role /sys/kernel/debug/ci_hdrc.*/role /sys/kernel/debug/usb/ci_hdrc.*/role 2>/dev/null | head -n 1)
+        echo "USB Role    : $( [ -n "$ROLE_FILE" ] && cat "$ROLE_FILE" 2>/dev/null || echo N/A )"
+        echo ""
+        echo "=== Network Interfaces (wlan0 = Internal WCN3620, wlan1 = Wayona MT7601U) ==="
+        ip -o -4 addr 2>/dev/null || ip addr
+        echo ""
+        nmcli device status 2>/dev/null || true
+        echo ""
+        echo "=== USB Bus ==="
+        lsusb 2>/dev/null || true
+        ;;
+esac

@@ -1,0 +1,104 @@
+<?xml version="1.0"?>
+<JWM>
+    <StartupCommand>xsetroot -solid "#0f172a" -cursor_name left_ptr</StartupCommand>
+
+    <RootMenu onroot="123">
+        <Program label="Terminal (xterm)">xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 105x30 -bg "#0d1117" -fg "#e6edf3"</Program>
+        <Program label="File Manager (Thunar)">thunar /root</Program>
+        <Program label="Android Shared Storage (/mnt/android_media)">thunar /mnt/android_media</Program>
+        <Program label="Web Browser (Dillo)">dillo</Program>
+        <Separator/>
+        <Program label="Dual-WiFi &amp; Network Manager (nmtui)">xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 95x28 -T "Network &amp; Dual-WiFi Manager" -e nmtui</Program>
+        <Program label="Scan External Wayona MT7601U (wlan1)">xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 110x32 -T "Wayona MT7601U (wlan1) Wi-Fi Scanner" -hold -e /usr/local/bin/dex-mode wlan1-scan</Program>
+        <Program label="Web-DeX &amp; OTG Status">xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 95x28 -T "LS-4505 Web-DeX Status" -hold -e /usr/local/bin/dex-mode status</Program>
+        <Separator/>
+        <Program label="Switch to DeX Hotspot + OTG Dual-WiFi (Mode 2A)">xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 95x28 -T "Switching to DeX Hotspot + OTG" -hold -e /usr/local/bin/dex-mode hotspot</Program>
+        <Program label="Switch to DeX Universal USB NCM (Mode 1)">xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 95x28 -T "Switching to DeX Universal USB" -hold -e /usr/local/bin/dex-mode usb</Program>
+        <Program label="Switch to DeX Legacy USB RNDIS">xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 95x28 -T "Switching to DeX USB RNDIS" -hold -e /usr/local/bin/dex-mode usb-rndis</Program>
+        <Separator/>
+        <Program label="System Monitor (htop)">xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 110x32 -T "LS-4505 System Monitor" -e htop</Program>
+        <Separator/>
+        <Program label="Reboot to Android 6.0.1">/usr/local/bin/reboot-to-android</Program>
+        <Program label="Reboot Linux 6.12.1">/usr/local/bin/reboot-to-linux</Program>
+    </RootMenu>
+
+    <Tray x="0" y="-1" height="38" autohide="off" halign="fixed" valign="bottom">
+        <TrayButton label="  LS-4505 DeX  ">root:1</TrayButton>
+        <Spacer width="6"/>
+        <TrayButton label=" Terminal ">exec:xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 105x30 -bg "#0d1117" -fg "#e6edf3"</TrayButton>
+        <TrayButton label=" Files ">exec:thunar /root</TrayButton>
+        <TrayButton label=" Browser ">exec:dillo</TrayButton>
+        <TrayButton label=" Dual-WiFi ">exec:xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 95x28 -T "Network &amp; Dual-WiFi Manager" -e nmtui</TrayButton>
+        <TrayButton label=" DeX Status ">exec:xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 95x28 -T "LS-4505 Web-DeX Status" -hold -e /usr/local/bin/dex-mode status</TrayButton>
+        <TrayButton label=" Monitor ">exec:xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 110x32 -T "System Monitor" -e htop</TrayButton>
+        <Spacer width="10"/>
+        <TaskList maxwidth="220"/>
+        <Dock/>
+        <Clock format=" %a %H:%M "><Button mask="123">exec:xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 95x28 -hold -e /usr/local/bin/dex-mode status</Button></Clock>
+    </Tray>
+
+    <WindowStyle>
+        <Font>DejaVu Sans-10:bold</Font>
+        <Width>3</Width>
+        <Height>28</Height>
+        <Corner>4</Corner>
+        <Foreground>#cbd5e1</Foreground>
+        <Background>#1e293b</Background>
+        <Outline>#334155</Outline>
+        <Active>
+            <Foreground>#ffffff</Foreground>
+            <Background>#2563eb</Background>
+            <Outline>#3b82f6</Outline>
+        </Active>
+    </WindowStyle>
+
+    <TrayStyle>
+        <Font>DejaVu Sans-10:bold</Font>
+        <Background>#0b1120</Background>
+        <Foreground>#e2e8f0</Foreground>
+        <Outline>#1e293b</Outline>
+        <Active>
+            <Background>#2563eb</Background>
+            <Foreground>#ffffff</Background>
+        </Active>
+    </TrayStyle>
+
+    <TaskListStyle>
+        <Font>DejaVu Sans-10</Font>
+        <Background>#111827</Background>
+        <Foreground>#cbd5e1</Foreground>
+        <Active>
+            <Background>#1d4ed8</Background>
+            <Foreground>#ffffff</Background>
+        </Active>
+    </TaskListStyle>
+
+    <MenuStyle>
+        <Font>DejaVu Sans-10</Font>
+        <Foreground>#e2e8f0</Foreground>
+        <Background>#0f172a</Background>
+        <Outline>#334155</Outline>
+        <Active>
+            <Foreground>#ffffff</Foreground>
+            <Background>#2563eb</Background>
+        </Active>
+    </MenuStyle>
+
+    <Desktops width="2" height="1">
+        <Background type="solid">#0f172a</Background>
+    </Desktops>
+
+    <DoubleClickSpeed>400</DoubleClickSpeed>
+    <DoubleClickDelta>4</DoubleClickDelta>
+    <FocusModel>click</FocusModel>
+    <SnapMode distance="10">screen</SnapMode>
+    <MoveMode>opaque</MoveMode>
+    <ResizeMode>opaque</ResizeMode>
+
+    <Key mask="A" key="Tab">nextstacked</Key>
+    <Key mask="A" key="F4">close</Key>
+    <Key mask="A" key="F10">maximize</Key>
+    <Key mask="CA" key="t">exec:xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 105x30 -bg "#0d1117" -fg "#e6edf3"</Key>
+    <Key mask="CA" key="Right">rdesktop</Key>
+    <Key mask="CA" key="Left">ldesktop</Key>
+</JWM>

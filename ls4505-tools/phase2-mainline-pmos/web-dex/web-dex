@@ -1,0 +1,22 @@
+#!/sbin/openrc-run
+name="LS-4505 Zero-Install Browser Web-DeX"
+command="/usr/local/bin/web-dex-session"
+command_background="yes"
+pidfile="/run/web-dex.pid"
+output_log="/var/log/web-dex.log"
+error_log="/var/log/web-dex.log"
+
+depend() {
+    need local dbus
+    after networkmanager sshd
+}
+
+stop_post() {
+    for pf in /run/jwm-dex.pid /run/xvnc-dex.pid; do
+        if [ -f "$pf" ]; then
+            kill "$(cat "$pf")" 2>/dev/null || true
+            rm -f "$pf"
+        fi
+    done
+    killall dex-webd Xvnc vncconfig 2>/dev/null || true
+}

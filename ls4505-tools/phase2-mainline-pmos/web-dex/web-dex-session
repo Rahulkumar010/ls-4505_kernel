@@ -1,0 +1,31 @@
+#!/bin/sh
+export HOME=/root
+export USER=root
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+rm -f /tmp/.X1-lock /tmp/.X11-unix/X1 2>/dev/null || true
+
+/usr/bin/Xvnc :1 \
+    -geometry 1920x1080 \
+    -depth 24 \
+    -dpi 96 \
+    -SecurityTypes None \
+    -AcceptSetDesktopSize=1 \
+    -AlwaysShared=1 \
+    -FrameRate=60 \
+    -interface 127.0.0.1 \
+    -rfbport 5901 >/var/log/xvnc-dex.log 2>&1 &
+echo $! > /run/xvnc-dex.pid
+
+for i in $(seq 1 30); do
+    [ -S /tmp/.X11-unix/X1 ] && break
+    sleep 0.2
+done
+
+export DISPLAY=:1
+xsetroot -solid "#0f172a" -cursor_name left_ptr 2>/dev/null || true
+vncconfig -display :1 -nowin >/dev/null 2>&1 &
+jwm -f /etc/jwm/jwmrc-dex >/var/log/jwm-dex.log 2>&1 &
+echo $! > /run/jwm-dex.pid
+
+exec /usr/local/bin/dex-webd 80 /usr/share/novnc 127.0.0.1 5901

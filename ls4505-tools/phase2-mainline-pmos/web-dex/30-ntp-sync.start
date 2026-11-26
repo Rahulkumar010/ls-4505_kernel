@@ -1,0 +1,9 @@
+#!/bin/sh
+(
+    for i in $(seq 1 20); do
+        if ip route | grep -q '^default '; then
+            /usr/sbin/ntpd -n -q -p time.cloudflare.com -p pool.ntp.org >/dev/null 2>&1 && break
+        fi
+        sleep 3
+    done
+) &

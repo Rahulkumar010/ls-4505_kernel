@@ -13,6 +13,7 @@ See **[`docs/06-PHASE2-ULTRALEAN-ANDROID-LK2ND-MAINLINE-LINUX.md`](docs/06-PHASE
 - **[`docs/07-FIXES-CAMERA-KEYS-OTG-FASTBOOT-JWM-MT7601U.md`](docs/07-FIXES-CAMERA-KEYS-OTG-FASTBOOT-JWM-MT7601U.md)** ? Front camera OTP red-tint fix, capacitive button mapping, hands-free `lk2nd` Fastboot, USB OTG + SMB1360 5V boost, `MT7601U` Dual Wi-Fi, ~68 MB `JWM` Touch UI, and `ls4505_ultralean` v2.
 
 - **[`docs/08-FDROID-ANDROID6-TRUST-ANCHOR-FIX.md`](docs/08-FDROID-ANDROID6-TRUST-ANCHOR-FIX.md)** ? Root-cause & PEM-order fix for F-Droid Let's Encrypt `ISRG Root X1` (`6187b673.0`) TLS trust anchor validation on Android 6.0.1.
+- [`docs/09-WEB-DEX-USB-AND-DUAL-WIFI-HOTSPOT.md`](./docs/09-WEB-DEX-USB-AND-DUAL-WIFI-HOTSPOT.md) ? Zero-Install Browser **Web-DeX** (`http://172.16.42.1` universal `426 Mbps` `CDC-NCM` USB + 1-tap `LS4505-DeX` `wlan0` Hotspot `http://172.16.43.1` with simultaneous external Wayona `MT7601U` `wlan1` 5V OTG Dual-Wi-Fi)
 
 ## Branches & Kernel Versions Included
 
