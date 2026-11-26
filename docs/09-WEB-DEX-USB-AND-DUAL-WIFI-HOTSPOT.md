@@ -73,3 +73,14 @@ dex-mode wlan1-scan   # Scan Wi-Fi APs specifically using external Wayona MT7601
    - Sending an empty DHCP Option 3 (Router) on `usb0` ensures Windows/macOS/Linux hosts route `172.16.42.0/24` over USB while keeping their existing Wi-Fi/Ethernet default internet gateway intact.
 4. **Alpine `iptables-legacy` vs `xtables-nft-multi` + Automatic NTP Sync**:
    - Installed `iptables-legacy` (`CONFIG_IP_NF_NAT=m` + `CONFIG_NETFILTER_XT_TARGET_MASQUERADE=m`) for `172.16.43.0/24 -> wlan1` NAT forwarding, and added `/etc/local.d/30-ntp-sync.start` to step the read-only PM8909 1970 RTC to UTC/IST automatically as soon as an upstream default route appears.
+
+---
+
+## 5. JavaScript-Enabled Lightweight Web Browser (`BadWolf` + `libbadwolf_js_on.so`)
+
+- **Why Dillo lacked JS**: `Dillo` is a static HTML/CSS viewer (`~8 MB` RAM) with no JavaScript engine.
+- **Solution**: Installed **`BadWolf 1.3.0`** backed by the already-present **`webkit2gtk-4.1` (`2.46.3` WebKit + JavaScriptCore)** engine (`0 MiB` extra library bloat, **`~56 MB` RAM** when browsing JS sites ? leaving **`~749 MB` RAM available**!).
+- **Default-ON `[JS]` Toggle (`libbadwolf_js_on.so` + `/usr/local/bin/dex-browser`)**:
+  - Upstream BadWolf defaults its per-tab `[JS]` toolbar button to `OFF`.
+  - `libbadwolf_js_on.c` (`5 KB` `LD_PRELOAD` helper) activates the `[JS]` toggle automatically upon tab creation (while keeping the `[JS]` toolbar button clickable anytime you want to disable JS on a tab), and `dex-browser` sets `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `WEBKIT_DISABLE_COMPOSITING_MODE=1` for tear-free software rendering on `Xvnc` & `SimpleDRM`.
+  - Bound to the **`Browser`** taskbar button in Web-DeX (`jwmrc-dex`), with `Dillo` retained in the **`LS-4505 DeX`** menu as *Lite Static Browser (Dillo)*.

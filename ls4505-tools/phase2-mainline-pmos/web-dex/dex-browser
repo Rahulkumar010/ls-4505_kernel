@@ -1,0 +1,8 @@
+#!/bin/sh
+export WEBKIT_DISABLE_DMABUF_RENDERER=1
+export WEBKIT_DISABLE_COMPOSITING_MODE=1
+export LD_PRELOAD=/usr/local/lib/libbadwolf_js_on.so
+if [ $# -eq 0 ]; then
+    set -- https://www.google.com
+fi
+exec /usr/bin/badwolf $@
