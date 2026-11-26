@@ -6,7 +6,8 @@
         <Program label="Terminal (xterm)">xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 105x30 -bg "#0d1117" -fg "#e6edf3"</Program>
         <Program label="File Manager (Thunar)">thunar /root</Program>
         <Program label="Android Shared Storage (/mnt/android_media)">thunar /mnt/android_media</Program>
-        <Program label="Web Browser (Dillo)">dillo</Program>
+        <Program label="Web Browser (BadWolf - JS)">/usr/local/bin/dex-browser</Program>
+        <Program label="Lite Static Browser (Dillo)">dillo</Program>
         <Separator/>
         <Program label="Dual-WiFi &amp; Network Manager (nmtui)">xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 95x28 -T "Network &amp; Dual-WiFi Manager" -e nmtui</Program>
         <Program label="Scan External Wayona MT7601U (wlan1)">xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 110x32 -T "Wayona MT7601U (wlan1) Wi-Fi Scanner" -hold -e /usr/local/bin/dex-mode wlan1-scan</Program>
@@ -27,7 +28,7 @@
         <Spacer width="6"/>
         <TrayButton label=" Terminal ">exec:xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 105x30 -bg "#0d1117" -fg "#e6edf3"</TrayButton>
         <TrayButton label=" Files ">exec:thunar /root</TrayButton>
-        <TrayButton label=" Browser ">exec:dillo</TrayButton>
+        <TrayButton label=" Browser ">exec:/usr/local/bin/dex-browser</TrayButton>
         <TrayButton label=" Dual-WiFi ">exec:xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 95x28 -T "Network &amp; Dual-WiFi Manager" -e nmtui</TrayButton>
         <TrayButton label=" DeX Status ">exec:xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 95x28 -T "LS-4505 Web-DeX Status" -hold -e /usr/local/bin/dex-mode status</TrayButton>
         <TrayButton label=" Monitor ">exec:xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 110x32 -T "System Monitor" -e htop</TrayButton>

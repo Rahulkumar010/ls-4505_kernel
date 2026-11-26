@@ -14,7 +14,8 @@
         <Program label="USB OTG Host ON (5V + MT7601U)">xterm -fa "DejaVu Sans Mono" -fs 10 -hold -e /usr/local/bin/otg-mode host</Program>
         <Program label="USB Gadget ON (PC SSH)">xterm -fa "DejaVu Sans Mono" -fs 10 -hold -e /usr/local/bin/otg-mode gadget</Program>
         <Separator/>
-        <Program label="Web Browser (Dillo)">dillo</Program>
+        <Program label="Web Browser (BadWolf - JS)">/usr/local/bin/dex-browser</Program>
+        <Program label="Lite Static Browser (Dillo)">dillo</Program>
         <Program label="File Manager (Thunar)">thunar /root</Program>
         <Program label="System Monitor (htop)">xterm -fa "DejaVu Sans Mono" -fs 10 -e htop</Program>
         <Separator/>
