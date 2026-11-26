@@ -4,25 +4,35 @@ for bl in /sys/class/backlight/*/brightness; do
     [ -e "$bl" ] && echo 220 > "$bl" 2>/dev/null || true
 done
 
-if ls /tmp/dex-apks/*.apk >/dev/null 2>&1; then
-    apk add --no-network --allow-untrusted /tmp/dex-apks/*.apk >/var/log/dex-apk-install.log 2>&1 && rm -rf /tmp/dex-apks
-fi
-
-if ip link show usb0 >/dev/null 2>&1; then
-    nmcli device set usb0 managed no >/dev/null 2>&1 || true
-    ip addr add 172.16.42.1/24 dev usb0 2>/dev/null || true
-    ip link set usb0 up 2>/dev/null || true
+G=/sys/kernel/config/usb_gadget/g1
+if [ -d "$G" ]; then
+    modprobe bridge 2>/dev/null || true
+    ip link add name br0 type bridge 2>/dev/null || true
+    nmcli device set br0 managed no >/dev/null 2>&1 || true
+    for IF in usb0 usb1; do
+        if ip link show "$IF" >/dev/null 2>&1; then
+            nmcli device set "$IF" managed no >/dev/null 2>&1 || true
+            ip addr flush dev "$IF" 2>/dev/null || true
+            ip link set "$IF" master br0 2>/dev/null || true
+            ip link set "$IF" up 2>/dev/null || true
+        fi
+    done
+    ip addr add 172.16.42.1/24 dev br0 2>/dev/null || true
+    ip link set br0 up 2>/dev/null || true
     killall udhcpd 2>/dev/null || true
+    mkdir -p /var/lib/misc
     if command -v dnsmasq >/dev/null 2>&1; then
         dnsmasq \
             --pid-file=/run/dnsmasq-dex-usb.pid \
-            --interface=usb0 \
+            --dhcp-leasefile=/run/dnsmasq-usb.leases \
+            --interface=br0 \
             --bind-dynamic \
             --except-interface=lo \
             --dhcp-range=172.16.42.10,172.16.42.50,255.255.255.0,12h \
             --dhcp-option=3 \
             --dhcp-option=6,172.16.42.1 \
-            --local=/lan/ --address=/dex.lan/172.16.42.1 2>/dev/null || true
+            --local=/lan/ \
+            --address=/dex.lan/172.16.42.1 2>/dev/null || true
     fi
 fi
 
@@ -35,10 +45,4 @@ fi
 
 modprobe qcom_wcnss_pil 2>/dev/null || true
 modprobe wcn36xx 2>/dev/null || true
-
-(
-    for i in 1 2 3 4 5 6 7 8; do
-        ntpd -n -q -p pool.ntp.org >/dev/null 2>&1 && break
-        sleep 5
-    done
-) &
+( sleep 8; iw dev wlan0 set power_save off 2>/dev/null || true ) &

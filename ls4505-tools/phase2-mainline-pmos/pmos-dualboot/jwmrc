@@ -5,6 +5,7 @@
         <Program label="DeX Universal USB NCM (Mode 1)">xterm -fa "DejaVu Sans Mono" -fs 10 -hold -e /usr/local/bin/dex-mode usb</Program>
         <Program label="DeX Legacy USB RNDIS">xterm -fa "DejaVu Sans Mono" -fs 10 -hold -e /usr/local/bin/dex-mode usb-rndis</Program>
         <Program label="DeX &amp; Dual-WiFi Status">xterm -fa "DejaVu Sans Mono" -fs 10 -hold -e /usr/local/bin/dex-mode status</Program>
+        <Program label="Lock Web-DeX Sessions">/usr/local/bin/dex-passwd --lock</Program>
         <Separator/>
         <Program label="Terminal">xterm -fa "DejaVu Sans Mono" -fs 11 -bg "#11161d" -fg "#e6edf3"</Program>
         <Program label="Touch Keyboard">matchbox-keyboard</Program>

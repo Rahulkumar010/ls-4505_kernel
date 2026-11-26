@@ -84,3 +84,21 @@ dex-mode wlan1-scan   # Scan Wi-Fi APs specifically using external Wayona MT7601
   - Upstream BadWolf defaults its per-tab `[JS]` toolbar button to `OFF`.
   - `libbadwolf_js_on.c` (`5 KB` `LD_PRELOAD` helper) activates the `[JS]` toggle automatically upon tab creation (while keeping the `[JS]` toolbar button clickable anytime you want to disable JS on a tab), and `dex-browser` sets `WEBKIT_DISABLE_DMABUF_RENDERER=1` + `WEBKIT_DISABLE_COMPOSITING_MODE=1` for tear-free software rendering on `Xvnc` & `SimpleDRM`.
   - Bound to the **`Browser`** taskbar button in Web-DeX (`jwmrc-dex`), with `Dillo` retained in the **`LS-4505 DeX`** menu as *Lite Static Browser (Dillo)*.
+
+---
+
+## 6. Web-DeX Password Protection & Session Security (`dex-passwd` + `dex-webd`)
+
+- **Full-Length Salted-SHA1 Gate (`/etc/dex-webd.auth`, `0600`)**:
+  - Protects both the HTML5 UI (`/`, `/vnc.html`) and the `/websockify` RFC-6455 WebSocket endpoint (`401 Unauthorized` without a valid session token).
+  - Supports arbitrary password lengths and characters (no 8-character classic VNC truncation) with a 1-second brute-force delay on failed `POST /login` attempts.
+  - Issues an `HttpOnly; SameSite=Strict` session cookie (`dex_session`) derived from a 256-bit boot secret + `/run/dex-webd.epoch`, preserving seamless `noVNC` auto-reconnects while allowing instant server-side session revocation via `/logout` or `dex-passwd --lock`.
+- **Dual-OS Bridge Upgrade (`0x1d6b:0x0107`, `br0`)**:
+  - Upgraded Mode 1 USB gadget to expose `c.1` (`rndis.usb0` + `MSFT100` `os_desc` for Windows 7/8/10/11 ? immune to `UsbNcm.sys` idle RX stalls) and `c.2` (`ecm.usb0` `CDC-ECM` for macOS, Linux, ChromeOS, and iPadOS) bridged together under `br0` (`172.16.42.1/24`), plus disabled `wcn36xx` BMPS power-save (`iw dev wlan0 set power_save off`).
+- **Managing Web-DeX Password**:
+  ```sh
+  dex-passwd                 # Change Web-DeX password interactively
+  dex-passwd <new_password>  # Set Web-DeX password non-interactively
+  dex-passwd --lock          # Immediately lock all open Web-DeX browser tabs
+  dex-passwd --disable       # Disable password gate
+  ```

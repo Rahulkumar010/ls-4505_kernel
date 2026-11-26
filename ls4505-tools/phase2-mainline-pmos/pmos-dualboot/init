@@ -24,47 +24,52 @@ echo "=========================================================="
 
 setup_usb_network() {
     G=/sys/kernel/config/usb_gadget/g1
-    mkdir -p $G
+    mkdir -p $G $G/strings/0x409 $G/configs/c.1/strings/0x409 $G/configs/c.2/strings/0x409 $G/os_desc
     echo 0x1d6b > $G/idVendor
-    echo 0x0106 > $G/idProduct
-    echo 0x0102 > $G/bcdDevice
+    echo 0x0107 > $G/idProduct
+    echo 0x0103 > $G/bcdDevice
     echo 0x0200 > $G/bcdUSB
-    echo 0xEF > $G/bDeviceClass
-    echo 0x02 > $G/bDeviceSubClass
-    echo 0x01 > $G/bDeviceProtocol
-    mkdir -p $G/os_desc
-    echo 1 > $G/os_desc/use
-    echo 0xcd > $G/os_desc/b_vendor_code
+    echo 0x02   > $G/bDeviceClass
+    echo 0x00   > $G/bDeviceSubClass
+    echo 0x00   > $G/bDeviceProtocol
+    echo 1      > $G/os_desc/use
+    echo 0xcd   > $G/os_desc/b_vendor_code
     echo MSFT100 > $G/os_desc/qw_sign
 
-    mkdir -p $G/strings/0x409
     echo "4f409015" > $G/strings/0x409/serialnumber
     echo "LYF / postmarketOS" > $G/strings/0x409/manufacturer
-    echo "LS-4505 Web-DeX Universal USB (CDC-NCM)" > $G/strings/0x409/product
+    echo "LS-4505 Web-DeX Dual-OS USB" > $G/strings/0x409/product
 
-    mkdir -p $G/functions/ncm.usb0
-    [ -e $G/functions/ncm.usb0/os_desc/interface.ncm/compatible_id ] &&         echo WINNCM > $G/functions/ncm.usb0/os_desc/interface.ncm/compatible_id 2>/dev/null || true
-    echo "02:45:05:89:09:11" > $G/functions/ncm.usb0/dev_addr
-    echo "02:45:05:89:09:12" > $G/functions/ncm.usb0/host_addr
+    mkdir -p $G/functions/rndis.usb0
+    echo RNDIS   > $G/functions/rndis.usb0/os_desc/interface.rndis/compatible_id
+    echo 5162001 > $G/functions/rndis.usb0/os_desc/interface.rndis/sub_compatible_id
+    echo "02:45:05:89:09:01" > $G/functions/rndis.usb0/dev_addr
+    echo "02:45:05:89:09:02" > $G/functions/rndis.usb0/host_addr
 
-    mkdir -p $G/configs/c.1/strings/0x409
-    echo "CDC-NCM Web-DeX" > $G/configs/c.1/strings/0x409/configuration
+    mkdir -p $G/functions/ecm.usb0
+    echo "02:45:05:89:09:21" > $G/functions/ecm.usb0/dev_addr
+    echo "02:45:05:89:09:22" > $G/functions/ecm.usb0/host_addr
+
+    echo "RNDIS (Windows)" > $G/configs/c.1/strings/0x409/configuration
     echo 500 > $G/configs/c.1/MaxPower
     ln -s $G/configs/c.1 $G/os_desc/c.1
-    ln -s $G/functions/ncm.usb0 $G/configs/c.1/
+    ln -s $G/functions/rndis.usb0 $G/configs/c.1/
+
+    echo "CDC-ECM (macOS/Linux)" > $G/configs/c.2/strings/0x409/configuration
+    echo 500 > $G/configs/c.2/MaxPower
+    ln -s $G/functions/ecm.usb0 $G/configs/c.2/
 
     UDC=$(ls /sys/class/udc | head -n 1)
     if [ -n "$UDC" ]; then
         echo "$UDC" > $G/UDC
         sleep 1
-        IFACE=$(cat $G/functions/ncm.usb0/ifname 2>/dev/null || echo usb0)
-        ifconfig "$IFACE" 172.16.42.1 netmask 255.255.255.0 up 2>/dev/null || ip addr add 172.16.42.1/24 dev "$IFACE"
-        ip link set "$IFACE" up 2>/dev/null || true
+        ifconfig usb0 172.16.42.1 netmask 255.255.255.0 up 2>/dev/null || ip addr add 172.16.42.1/24 dev usb0
+        ip link set usb0 up 2>/dev/null || true
         mkdir -p /var/lib/misc
         touch /var/lib/misc/udhcpd.leases
         udhcpd /etc/udhcpd.conf 2>/dev/null || true
         telnetd -p 2323 -l /bin/sh 2>/dev/null || true
-        echo "[OK] Universal USB CDC-NCM active on 172.16.42.1 (UDC: $UDC)"
+        echo "[OK] Dual-OS USB (RNDIS c.1 + CDC-ECM c.2) active on 172.16.42.1 (UDC: $UDC)"
     fi
 }
 setup_usb_network || echo "[WARN] USB gadget setup warning"

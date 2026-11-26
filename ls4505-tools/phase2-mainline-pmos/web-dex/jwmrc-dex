@@ -12,6 +12,8 @@
         <Program label="Dual-WiFi &amp; Network Manager (nmtui)">xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 95x28 -T "Network &amp; Dual-WiFi Manager" -e nmtui</Program>
         <Program label="Scan External Wayona MT7601U (wlan1)">xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 110x32 -T "Wayona MT7601U (wlan1) Wi-Fi Scanner" -hold -e /usr/local/bin/dex-mode wlan1-scan</Program>
         <Program label="Web-DeX &amp; OTG Status">xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 95x28 -T "LS-4505 Web-DeX Status" -hold -e /usr/local/bin/dex-mode status</Program>
+        <Program label="Lock Web-DeX Browser Sessions">/usr/local/bin/dex-passwd --lock</Program>
+        <Program label="Change Web-DeX Password">xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 75x16 -T "Change Web-DeX Password" -e /usr/local/bin/dex-passwd</Program>
         <Separator/>
         <Program label="Switch to DeX Hotspot + OTG Dual-WiFi (Mode 2A)">xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 95x28 -T "Switching to DeX Hotspot + OTG" -hold -e /usr/local/bin/dex-mode hotspot</Program>
         <Program label="Switch to DeX Universal USB NCM (Mode 1)">xterm -fa "DejaVu Sans Mono" -fs 11 -geometry 95x28 -T "Switching to DeX Universal USB" -hold -e /usr/local/bin/dex-mode usb</Program>
